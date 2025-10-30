@@ -1,23 +1,25 @@
 ﻿@inherits LayoutComponentBase
 
 <div class="page">
-    <div class="sidebar">
-        <NavMenu/>
-    </div>
-
-    <main>
-        <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
+   
+    <!-- Bannière du MainLayout -->
+    <header class="banner">
+        <div class="banner-content px-4">
+            <h1 >Bienvenue sur note site d'hébergement de mot de passe : Pepepepepe</h1>
+    
         </div>
-
+        <div class="banner-lines">
+            <span class="line orange"></span>
+            <span class="line pink"></span>
+        </div>
+    </header>
+    
+    <!-- Body du MainLayout -->
+    <main>
         <article class="content px-4">
             @Body
         </article>
     </main>
+    
 </div>
 
-<div id="blazor-error-ui">
-    An unhandled error has occurred.
-    <a href="" class="reload">Reload</a>
-    <a class="dismiss">🗙</a>
-</div>
