@@ -1,8 +1,18 @@
 ﻿@inherits LayoutComponentBase
+@using Microsoft.AspNetCore.Components.Authorization
 
 <div class="page">
     <div class="sidebar">
         <NavMenu/>
+        <AuthorizeView Context="context">
+            <Authorized>
+                Bonjour, @context.User.Identity?.Name
+                <a class="ms-3" href="MicrosoftIdentity/Account/SignOut">Se déconnecter</a>
+            </Authorized>
+            <NotAuthorized>
+                <a href="MicrosoftIdentity/Account/SignIn">Se connecter</a>
+            </NotAuthorized>
+        </AuthorizeView>
     </div>
 
     <main>
