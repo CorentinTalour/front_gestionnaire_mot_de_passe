@@ -1,29 +1,54 @@
 ﻿@page "/"
-
+@using front_gestionnaire_mot_de_passe.Components.CreateVaultModal
+@using front_gestionnaire_mot_de_passe.Components.VaultDisplay
+@rendermode InteractiveServer
 <PageTitle>Home</PageTitle>
 
 <div class="home">
 
     <section class="upper_part">
         <div class="create_vault_zone">
-            <button class="create-btn">Créer un coffre</button>
+            <button class="create-btn" @onclick="ShowModal">Créer un coffre</button>
         </div>
         
         <div class="search_bar_zone">
             <div class="search-container">
-                <input type="text" placeholder="Rechercher..." class="search-input" />
+                <!-- Liaison bidirectionnelle entre la variable C# et le champ -->
+                <input type="text" placeholder="Rechercher..." class="search-input" @bind="_searchText" />
+                
                 <button class="search-btn">🔍</button>
-                <button class="clear-btn">✖</button>
+                
+                <!-- Bouton qui appelle la méthode ClearSearch -->
+                <button class="clear-btn" @onclick="ClearSearch">✖</button>
             </div>
         </div>
     </section>
     
     <section class="display_vault_zone">
-        
+        <VaultCard/>
     </section>
+    
+    <CreateVaultModal IsVisible="@isModalVisible" OnClose="HideModal" />
     
 </div>
 
-<style>
-   
-</style>
+@code {
+    private string _searchText = string.Empty;
+    private bool isModalVisible = false;
+
+    private void ClearSearch()
+    {
+        _searchText = string.Empty;
+        StateHasChanged();
+    }
+
+    private void ShowModal()
+    {
+        isModalVisible = true;
+    }
+
+    private void HideModal()
+    {
+        isModalVisible = false;
+    }
+}
