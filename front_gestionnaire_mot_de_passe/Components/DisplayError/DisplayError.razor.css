@@ -1,0 +1,37 @@
+/* === Message "Aucun coffre trouvé" === */
+.no-vault-banner {
+    position: relative;
+    background-color: #111;
+    color: #fff;
+    padding: 1.5rem;
+    border: 2px solid #222;
+    border-radius: 8px;
+    margin-top: 1rem;
+    text-align: center;
+    overflow: hidden;
+}
+
+.no-vault-content h3 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #fff;
+}
+
+.no-vault-lines {
+    display: flex;
+    height: 4px;
+    margin-top: 0.75rem;
+}
+
+.no-vault-lines .line {
+    flex: 1;
+}
+
+.no-vault-lines .orange {
+    background: linear-gradient(to right, orange, #ffb84d);
+}
+
+.no-vault-lines .pink {
+    background: linear-gradient(to right, pink, #ff66b2);
+}

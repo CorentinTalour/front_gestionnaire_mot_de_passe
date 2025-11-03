@@ -1,7 +1,10 @@
 ﻿@page "/"
 @using front_gestionnaire_mot_de_passe.Components.CreateVaultModal
 @using front_gestionnaire_mot_de_passe.Components.VaultDisplay
+@using api_chiffrement_csharp.EF.Tables
+@using front_gestionnaire_mot_de_passe.Components.DisplayError
 @rendermode InteractiveServer
+
 <PageTitle>Home</PageTitle>
 
 <div class="home">
@@ -10,45 +13,60 @@
         <div class="create_vault_zone">
             <button class="create-btn" @onclick="ShowModal">Créer un coffre</button>
         </div>
-        
+
         <div class="search_bar_zone">
             <div class="search-container">
-                <!-- Liaison bidirectionnelle entre la variable C# et le champ -->
-                <input type="text" placeholder="Rechercher..." class="search-input" @bind="_searchText" />
-                
-                <button class="search-btn">🔍</button>
-                
-                <!-- Bouton qui appelle la méthode ClearSearch -->
+                <input type="text"
+                       placeholder="Rechercher..."
+                       class="search-input"
+                       @bind="_searchText"
+                       @bind:event="oninput" />
+                <div class="search-btn">🔍 Recherchez un coffre fort</div>
                 <button class="clear-btn" @onclick="ClearSearch">✖</button>
             </div>
         </div>
     </section>
-    
-    <section class="display_vault_zone">
-        <VaultCard/>
-    </section>
-    
+
+    @if (FilteredVaults.Any())
+    {
+        @foreach (var vault in FilteredVaults)
+        {
+            <VaultCard VaultData="vault" />
+        }
+    }
+    else
+    {
+        <DisplayError />
+    }
+
     <CreateVaultModal IsVisible="@isModalVisible" OnClose="HideModal" />
-    
+
 </div>
 
 @code {
     private string _searchText = string.Empty;
     private bool isModalVisible = false;
 
+    // Ce sont les mocks qui simulent les coffres (situation provisoire)
+    private List<Vault> Vaults = new()
+    {
+        new Vault { Id = 1, Name = "Coffre personnel", Salt = "salt1", NbIteration = 5000, CreatedAt = DateTime.Now.AddDays(-10), UpdatedAt = DateTime.Now.AddDays(-2), Password = "********", UserId = 1 },
+        new Vault { Id = 2, Name = "Coffre professionnel", Salt = "salt2", NbIteration = 10000, CreatedAt = DateTime.Now.AddDays(-20), UpdatedAt = DateTime.Now.AddDays(-3), Password = "********", UserId = 2 },
+        new Vault { Id = 3, Name = "Coffre partagé équipe", Salt = "salt3", NbIteration = 7500, CreatedAt = DateTime.Now.AddDays(-30), UpdatedAt = DateTime.Now.AddDays(-5), Password = "********", UserId = 3 },
+        new Vault { Id = 4, Name = "Coffre test 4", Salt = "salt4", NbIteration = 4000, CreatedAt = DateTime.Now.AddDays(-2), UpdatedAt = null, Password = "********", UserId = 4 },
+        new Vault { Id = 5, Name = "Coffre test 5", Salt = "salt4", NbIteration = 4000, CreatedAt = DateTime.Now.AddDays(-2), UpdatedAt = null, Password = "********", UserId = 4 }
+    };
+
+    // La fonction de filtrage pour la barre de recherche
+    private IEnumerable<Vault> FilteredVaults =>
+        Vaults.Where(v => string.IsNullOrWhiteSpace(_searchText)
+                        || v.Name.Contains(_searchText, StringComparison.OrdinalIgnoreCase));
+
     private void ClearSearch()
     {
         _searchText = string.Empty;
-        StateHasChanged();
     }
 
-    private void ShowModal()
-    {
-        isModalVisible = true;
-    }
-
-    private void HideModal()
-    {
-        isModalVisible = false;
-    }
+    private void ShowModal() => isModalVisible = true;
+    private void HideModal() => isModalVisible = false;
 }
