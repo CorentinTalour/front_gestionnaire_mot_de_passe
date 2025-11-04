@@ -1,0 +1,42 @@
+[
+  {
+    "Id": 1,
+    "Name": "Coffre personnel",
+    "Salt": "salt1",
+    "NbIteration": 5000,
+    "CreatedAt": "2025-10-25T10:30:00",
+    "UpdatedAt": "2025-11-02T09:45:00",
+    "Password": "********",
+    "UserId": 1
+  },
+  {
+    "Id": 2,
+    "Name": "Coffre professionnel",
+    "Salt": "salt2",
+    "NbIteration": 10000,
+    "CreatedAt": "2025-10-15T14:00:00",
+    "UpdatedAt": "2025-11-01T12:30:00",
+    "Password": "********",
+    "UserId": 2
+  },
+  {
+    "Id": 3,
+    "Name": "Coffre partagé équipe",
+    "Salt": "salt3",
+    "NbIteration": 7500,
+    "CreatedAt": "2025-10-05T09:00:00",
+    "UpdatedAt": "2025-10-30T11:20:00",
+    "Password": "********",
+    "UserId": 3
+  },
+  {
+    "Id": 4,
+    "Name": "Coffre test 4",
+    "Salt": "salt4",
+    "NbIteration": 4000,
+    "CreatedAt": "2025-11-02T10:00:00",
+    "UpdatedAt": null,
+    "Password": "********",
+    "UserId": 4
+  }
+]
