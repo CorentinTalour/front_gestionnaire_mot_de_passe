@@ -1,0 +1,40 @@
+@page "/VaultPage/{id:int}"
+@using api_chiffrement_csharp.EF.Tables
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@using System.Text.Json
+
+<PageTitle>Détails du coffre</PageTitle>
+
+<h2>Détails du coffre</h2>
+
+@if (VaultData is null)
+{
+    <p>Chargement du coffre...</p>
+}
+else
+{
+    <div class="vault-details">
+        <p><strong>Nom :</strong> @VaultData.Name</p>
+        <p><strong>Créé le :</strong> @VaultData.CreatedAt.ToString("dd/MM/yyyy HH:mm")</p>
+        <p><strong>Modifié le :</strong> @(VaultData.UpdatedAt?.ToString("dd/MM/yyyy HH:mm") ?? "Jamais")</p>
+    </div>
+
+  
+}
+
+@code {
+    [Parameter] public int id { get; set; }
+    public Vault? VaultData { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var json = await Http.GetStringAsync("data/vaults.json");
+        var vaults = JsonSerializer.Deserialize<List<Vault>>(json, new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true
+        });
+
+        VaultData = vaults?.FirstOrDefault(v => v.Id == id);
+    }
+}

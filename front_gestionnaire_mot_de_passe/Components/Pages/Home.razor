@@ -1,8 +1,10 @@
 ﻿@page "/"
-@using front_gestionnaire_mot_de_passe.Components.CreateVaultModal
-@using front_gestionnaire_mot_de_passe.Components.VaultDisplay
 @using api_chiffrement_csharp.EF.Tables
+@inject HttpClient Http
+@using System.Text.Json
+@using front_gestionnaire_mot_de_passe.Components.CreateVaultModal
 @using front_gestionnaire_mot_de_passe.Components.DisplayError
+@using front_gestionnaire_mot_de_passe.Components.VaultDisplay
 @rendermode InteractiveServer
 
 <PageTitle>Home</PageTitle>
@@ -47,26 +49,40 @@
     private string _searchText = string.Empty;
     private bool isModalVisible = false;
 
-    // Ce sont les mocks qui simulent les coffres (situation provisoire)
-    private List<Vault> Vaults = new()
-    {
-        new Vault { Id = 1, Name = "Coffre personnel", Salt = "salt1", NbIteration = 5000, CreatedAt = DateTime.Now.AddDays(-10), UpdatedAt = DateTime.Now.AddDays(-2), Password = "********", UserId = 1 },
-        new Vault { Id = 2, Name = "Coffre professionnel", Salt = "salt2", NbIteration = 10000, CreatedAt = DateTime.Now.AddDays(-20), UpdatedAt = DateTime.Now.AddDays(-3), Password = "********", UserId = 2 },
-        new Vault { Id = 3, Name = "Coffre partagé équipe", Salt = "salt3", NbIteration = 7500, CreatedAt = DateTime.Now.AddDays(-30), UpdatedAt = DateTime.Now.AddDays(-5), Password = "********", UserId = 3 },
-        new Vault { Id = 4, Name = "Coffre test 4", Salt = "salt4", NbIteration = 4000, CreatedAt = DateTime.Now.AddDays(-2), UpdatedAt = null, Password = "********", UserId = 4 },
-        new Vault { Id = 5, Name = "Coffre test 5", Salt = "salt4", NbIteration = 4000, CreatedAt = DateTime.Now.AddDays(-2), UpdatedAt = null, Password = "********", UserId = 4 }
-    };
+    private List<Vault> Vaults = new();
 
-    // La fonction de filtrage pour la barre de recherche
     private IEnumerable<Vault> FilteredVaults =>
         Vaults.Where(v => string.IsNullOrWhiteSpace(_searchText)
-                        || v.Name.Contains(_searchText, StringComparison.OrdinalIgnoreCase));
+                          || v.Name.Contains(_searchText, StringComparison.OrdinalIgnoreCase));
 
-    private void ClearSearch()
-    {
-        _searchText = string.Empty;
-    }
-
+    private void ClearSearch() => _searchText = string.Empty;
     private void ShowModal() => isModalVisible = true;
     private void HideModal() => isModalVisible = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var json = await Http.GetStringAsync("data/vaults.json");
+
+            Vaults = JsonSerializer.Deserialize<List<Vault>>(json, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            }) ?? new List<Vault>();
+
+            Console.WriteLine($"✅ {Vaults.Count} coffres chargés.");
+
+            // 🔹 Affiche le détail de chaque coffre
+            foreach (var vault in Vaults)
+            {
+                Console.WriteLine($"Id: {vault.Id}, Name: {vault.Name}, Salt: {vault.Salt}, " +
+                  $"Password: {vault.Password}, CreatedAt: {vault.CreatedAt}, " +
+                  $"UpdatedAt: {vault.UpdatedAt}, UserId: {vault.UserId}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ Erreur lors du chargement des coffres : {ex.Message}");
+        }
+    }
 }

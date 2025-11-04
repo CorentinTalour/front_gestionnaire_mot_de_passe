@@ -1,35 +1,37 @@
 @using api_chiffrement_csharp.EF.Tables
 
-<div class="vault-card">
-    <div class="vault-card-header">
-        <img src="cle_icon.jpg" alt="Icône de clé" class="vault-key-icon" />
 
-        <h3>@VaultData.Name</h3>
+<div class="vault-card">
+    
+    <div class="vault-card-header">
+        <img src="cle_icon.jpg" alt="Icône de clé" class="vault-key-icon"/>
+
+        <h3>@VaultData?.Name</h3>
     </div>
 
     <div class="vault-info">
-        <p><strong>Créé le :</strong> @VaultData.CreatedAt.ToString("dd/MM/yyyy HH:mm")</p>
-        <p><strong>Par :</strong>  "Utilisateur inconnu"</p>
-        <p><strong>Modifié le :</strong> @(VaultData.UpdatedAt?.ToString("dd/MM/yyyy HH:mm") ?? "Jamais")</p>
+        <p><strong>Créé le :</strong> @(VaultData != null ? VaultData.CreatedAt.ToString("dd/MM/yyyy HH:mm") : "")</p>
+
+        <p><strong>Par :</strong> "Utilisateur inconnu")</p>
+        <p><strong>Modifié le :</strong> @(VaultData?.UpdatedAt.HasValue == true ? VaultData.UpdatedAt.Value.ToString("dd/MM/yyyy HH:mm") : "Jamais")</p>
+
     </div>
 
     <div class="vault-actions">
-        <button class="consult-btn" disabled>Consulter</button>
+        <button class="consult-btn" @onclick="ConsultVault">Consulter</button>
     </div>
 </div>
 
 @code {
-    [Parameter]
-    public Vault VaultData { get; set; } = new Vault
+    [Parameter, EditorRequired]
+    public Vault VaultData { get; set; } = default!;
+
+    [Inject]
+    private NavigationManager Navigation { get; set; } = default!;
+
+    // Redirection vers la page vault{id}
+    private void ConsultVault()
     {
-        Id = 1,
-        Name = "Coffre de test",
-        Salt = "abc123",
-        NbIteration = 5000,
-        CreatedAt = DateTime.Now.AddDays(-5),
-        UpdatedAt = DateTime.Now.AddDays(-1),
-        Password = "********",
-        UserId = 1,
-        User = null
-    };
+        Navigation.NavigateTo($"/VaultPage/{VaultData.Id}");
+    }
 }
