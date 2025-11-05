@@ -5,17 +5,19 @@
 
 <AuthorizeView Context="context">
     <Authorized>
-        Bonjour, @context.User.Identity?.Name
-        @* <button class="nav-link btn btn-link" @onclick="@(() => Inspect(context))">Inspect</button> *@
-        <form action="authentication/logout" method="post">
-            <AntiforgeryToken />
-            <input type="hidden" name="ReturnUrl" value="@(Navigation.Uri)" />
-            <button type="submit" class="nav-link btn btn-link">
-                <span class="bi bi-arrow-bar-left-nav-menu" aria-hidden="true"></span> Logout
-            </button>
-        </form>
+        <div class="logout-form">
+            <p class="logout-form-text">Bonjour, @context.User.Identity?.Name</p>
+            @* <button class="nav-link btn btn-link" @onclick="@(() => Inspect(context))">Inspect</button> *@
+            <form action="authentication/logout" class="form" method="post" >
+                <AntiforgeryToken/>
+                <!-- <input type="hidden" name="ReturnUrl" value="@(Navigation.Uri)" />  -->
+                <button type="submit" title="Se déconnecter" class="logout-icon-btn">
+                    <img src="./icon_logout.png" alt="icone de déconnexion"/>
+                </button>
+            </form>
+        </div>
     </Authorized>
-    <NotAuthorized>
+    <NotAuthorized>s
         <a href="authentication/login">Log in</a>
     </NotAuthorized>
 </AuthorizeView>

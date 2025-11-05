@@ -1,0 +1,27 @@
+.logout-form {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    margin-bottom: 1rem;
+}
+
+.form {
+    position: absolute;
+    right: 1rem;
+}
+
+.logout-form-text {
+   margin: 0;
+}
+
+.logout-icon-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+}
+
+.logout-icon-btn img {
+    width: 3rem;
+}
