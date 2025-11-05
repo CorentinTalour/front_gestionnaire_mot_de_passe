@@ -1,0 +1,25 @@
+@using Microsoft.AspNetCore.Components.Authorization
+@inject NavigationManager Navigation
+@inherits LayoutComponentBase
+@page "/LoginDisplay"
+
+<AuthorizeView Context="context">
+    <Authorized>
+        Bonjour, @context.User.Identity?.Name
+        @* <button class="nav-link btn btn-link" @onclick="@(() => Inspect(context))">Inspect</button> *@
+        <form action="authentication/logout" method="post">
+            <AntiforgeryToken />
+            <input type="hidden" name="ReturnUrl" value="@(Navigation.Uri)" />
+            <button type="submit" class="nav-link btn btn-link">
+                <span class="bi bi-arrow-bar-left-nav-menu" aria-hidden="true"></span> Logout
+            </button>
+        </form>
+    </Authorized>
+    <NotAuthorized>
+        <a href="authentication/login">Log in</a>
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    
+}
