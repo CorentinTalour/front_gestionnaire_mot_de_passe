@@ -3,10 +3,10 @@
 @inject HttpClient Http
 @inject NavigationManager Navigation
 @using System.Text.Json
+@using front_gestionnaire_mot_de_passe.Components.Displayer
 
 <PageTitle>Détails du coffre</PageTitle>
 
-<h2>Détails du coffre</h2>
 
 @if (VaultData is null)
 {
@@ -14,13 +14,35 @@
 }
 else
 {
-    <div class="vault-details">
+    <!--<div class="vault-details">
         <p><strong>Nom :</strong> @VaultData.Name</p>
         <p><strong>Créé le :</strong> @VaultData.CreatedAt.ToString("dd/MM/yyyy HH:mm")</p>
         <p><strong>Modifié le :</strong> @(VaultData.UpdatedAt?.ToString("dd/MM/yyyy HH:mm") ?? "Jamais")</p>
-    </div>
+    </div> -->
 
-  
+    <section class="menu_vault">
+        <div class="menu_vault_top">
+            <button class="menu_button_create">+</button>
+            <button class="menu_button_share">Partager coffre-fort</button>
+        </div>
+
+        <h2 class="menu_title">Votre coffre fort : Florent</h2>
+
+        <div class="menu_vault_bottom">
+            <button class="menu_button_remove_user">Exclure utilisateur</button>
+            <button class="menu_button_delete_vault">Supprimer coffre-fort</button>
+        </div>
+    </section>
+    
+    <h3>Liste des mots de passe</h3>
+    
+    <section class="display_entries_zone">
+        <Displayer />
+        <Displayer />
+        <Displayer />
+        <Displayer />
+        
+    </section>
 }
 
 @code {
