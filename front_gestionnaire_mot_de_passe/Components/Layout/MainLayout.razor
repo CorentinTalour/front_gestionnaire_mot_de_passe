@@ -1,4 +1,6 @@
 ﻿@inherits LayoutComponentBase
+@using front_gestionnaire_mot_de_passe.Components.Shared
+@using Microsoft.AspNetCore.Components.Authorization
 
 <div class="page">
    
@@ -18,9 +20,8 @@
     <!-- Body du MainLayout -->
     <main>
         <article class="content px-4">
+            <LoginDisplay/>
             @Body
         </article>
     </main>
-    
 </div>
-
