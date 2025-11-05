@@ -1,7 +1,12 @@
 ﻿@page "/"
+@using api_chiffrement_csharp.EF.Tables
+@inject HttpClient Http
+@using System.Text.Json
 @using front_gestionnaire_mot_de_passe.Components.CreateVaultModal
+@using front_gestionnaire_mot_de_passe.Components.DisplayError
 @using front_gestionnaire_mot_de_passe.Components.VaultDisplay
 @rendermode InteractiveServer
+
 <PageTitle>Home</PageTitle>
 
 <div class="home">
@@ -10,45 +15,74 @@
         <div class="create_vault_zone">
             <button class="create-btn" @onclick="ShowModal">Créer un coffre</button>
         </div>
-        
+
         <div class="search_bar_zone">
             <div class="search-container">
-                <!-- Liaison bidirectionnelle entre la variable C# et le champ -->
-                <input type="text" placeholder="Rechercher..." class="search-input" @bind="_searchText" />
-                
-                <button class="search-btn">🔍</button>
-                
-                <!-- Bouton qui appelle la méthode ClearSearch -->
+                <input type="text"
+                       placeholder="Rechercher..."
+                       class="search-input"
+                       @bind="_searchText"
+                       @bind:event="oninput" />
+                <div class="search-btn">🔍 Recherchez un coffre fort</div>
                 <button class="clear-btn" @onclick="ClearSearch">✖</button>
             </div>
         </div>
     </section>
-    
-    <section class="display_vault_zone">
-        <VaultCard/>
-    </section>
-    
+
+    @if (FilteredVaults.Any())
+    {
+        @foreach (var vault in FilteredVaults)
+        {
+            <VaultCard VaultData="vault" />
+        }
+    }
+    else
+    {
+        <DisplayError />
+    }
+
     <CreateVaultModal IsVisible="@isModalVisible" OnClose="HideModal" />
-    
+
 </div>
 
 @code {
     private string _searchText = string.Empty;
     private bool isModalVisible = false;
 
-    private void ClearSearch()
-    {
-        _searchText = string.Empty;
-        StateHasChanged();
-    }
+    private List<Vault> Vaults = new();
 
-    private void ShowModal()
-    {
-        isModalVisible = true;
-    }
+    private IEnumerable<Vault> FilteredVaults =>
+        Vaults.Where(v => string.IsNullOrWhiteSpace(_searchText)
+                          || v.Name.Contains(_searchText, StringComparison.OrdinalIgnoreCase));
 
-    private void HideModal()
+    private void ClearSearch() => _searchText = string.Empty;
+    private void ShowModal() => isModalVisible = true;
+    private void HideModal() => isModalVisible = false;
+
+    protected override async Task OnInitializedAsync()
     {
-        isModalVisible = false;
+        try
+        {
+            var json = await Http.GetStringAsync("data/vaults.json");
+
+            Vaults = JsonSerializer.Deserialize<List<Vault>>(json, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            }) ?? new List<Vault>();
+
+            Console.WriteLine($"✅ {Vaults.Count} coffres chargés.");
+
+            // 🔹 Affiche le détail de chaque coffre
+            foreach (var vault in Vaults)
+            {
+                Console.WriteLine($"Id: {vault.Id}, Name: {vault.Name}, Salt: {vault.Salt}, " +
+                  $"Password: {vault.Password}, CreatedAt: {vault.CreatedAt}, " +
+                  $"UpdatedAt: {vault.UpdatedAt}, UserId: {vault.UserId}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ Erreur lors du chargement des coffres : {ex.Message}");
+        }
     }
 }

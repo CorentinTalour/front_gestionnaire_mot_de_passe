@@ -3,6 +3,7 @@ using front_gestionnaire_mot_de_passe.Components.Pages;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.Identity.Web;
 using Microsoft.Identity.Web.UI;
+using Microsoft.AspNetCore.Components;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -28,6 +29,14 @@ builder.Services.AddCascadingAuthenticationState();
 
 builder.Services.AddRazorPages().AddMicrosoftIdentityUI();
 builder.Services.AddRazorComponents().AddInteractiveServerComponents();
+
+builder.Services.AddHttpClient();
+
+builder.Services.AddScoped(sp =>
+{
+    var nav = sp.GetRequiredService<NavigationManager>();
+    return new HttpClient { BaseAddress = new Uri(nav.BaseUri) };
+});
 
 var app = builder.Build();
 
