@@ -1,0 +1,40 @@
+@page "/debug-token"
+@rendermode InteractiveServer
+@using Microsoft.Identity.Web
+@using System.IdentityModel.Tokens.Jwt
+@inject ITokenAcquisition TokenAcquisition
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.Identity.Web
+@attribute [Authorize]
+
+<h3>Debug Token</h3>
+
+@if (audience is null)
+{
+    <p>Chargement du token...</p>
+}
+else
+{
+    <p><strong>Audience :</strong> @audience</p>
+    <p><strong>Scopes :</strong> @scopes</p>
+}
+
+@code {
+    private string? audience;
+    private string? scopes;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Demande un token d'accès pour ton API
+        var token = await TokenAcquisition.GetAccessTokenForUserAsync(new[]
+        {
+            "api://b8f83755-0f15-42f5-9a43-cedf7cc50c0a/access_as_user"
+        });
+
+        // Décode le JWT pour vérifier les claims
+        var jwt = new JwtSecurityTokenHandler().ReadJwtToken(token);
+
+        audience = string.Join(",", jwt.Audiences);
+        scopes = jwt.Claims.FirstOrDefault(c => c.Type == "scp")?.Value ?? "(aucun scope)";
+    }
+}
