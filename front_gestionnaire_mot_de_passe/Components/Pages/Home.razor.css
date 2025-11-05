@@ -52,7 +52,7 @@
     padding-left: 1rem ;
 }
 
-.search-btn, .clear-btn {
+.clear-btn {
     background-color: #f0f0f0;
     border: none;
     padding: 8px 12px;
@@ -62,8 +62,15 @@
     height: 100%;
 }
 
-.search-btn:hover {
-    background-color: #ddd;
+.search-btn {
+    background-color: #f0f0f0;
+    border: none;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    padding-left: 1rem ;
+    padding-right: 1rem ;
 }
 
 .clear-btn:hover {
@@ -72,6 +79,7 @@
 
 .display_vault_zone {
     margin-top: 20px;
-    height: 100%;
+    max-height: 80rem;
+    overflow-y: auto;
     border: 1px solid #ccc;
 }
