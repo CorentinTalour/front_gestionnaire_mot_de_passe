@@ -131,6 +131,12 @@
     flex-direction: column;
     justify-content: center;
     align-items: center;
+    row-gap: 1.5rem;
+}
+
+.vault_title {
+    text-align: center;
+    margin-bottom: 0.5rem;
 }
  
 
