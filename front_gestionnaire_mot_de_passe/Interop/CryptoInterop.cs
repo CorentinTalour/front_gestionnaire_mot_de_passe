@@ -48,4 +48,17 @@ public class CryptoInterop
     
     public async Task<System.Text.Json.JsonElement> VerifyVaultPasswordAsync(int vaultId, string password, string apiBase = "https://localhost:7115")
         => await (await Mod()).InvokeAsync<System.Text.Json.JsonElement>("verifyVaultPassword", vaultId, password, apiBase);
+    
+    public async Task<bool> CreateEntryFromModalAsync(int vaultId, string apiBase)
+        => await (await Mod()).InvokeAsync<bool>("createEntryFromModal", vaultId, apiBase);
+    
+    public async Task<System.Text.Json.JsonElement> VerifyVaultPasswordServerAsync(
+        int vaultId, string password, string apiBase = "https://localhost:7115") =>
+        await (await Mod()).InvokeAsync<System.Text.Json.JsonElement>(
+            "verifyVaultPasswordServer", vaultId, password, apiBase);
+
+    public async Task ArmVaultSessionAsync(
+        int vaultId, string password, string vaultSaltB64, int iterations) =>
+        await (await Mod()).InvokeVoidAsync(
+            "armVaultSession", vaultId, password, vaultSaltB64, iterations);
 }

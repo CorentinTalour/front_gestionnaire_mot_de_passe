@@ -1,16 +1,33 @@
-
+@using api_chiffrement_csharp.EF.Tables
 <!-- Composant permettant l'affichage des éléments mappés (entries, user...) -->
 <div class="display-card">
-    
     <div class="display-card-header">
         <img src="cle_icon.jpg" alt="Icône de clé" class="vault-key-icon"/>
         <div class="display-info">
-            <p><strong>Intitulé : </strong> </p> 
+            <p><strong>Intitulé : @Entry.NomCypher.Cypher </strong> </p> 
         </div>
     </div>
-    
     <div class="display-actions">
         <button class="consult-btn" >Consulter</button>
     </div>
-    
 </div>
+
+@code {
+    [Parameter, EditorRequired]
+    public VaultEntry Entry { get; set; } = default!;
+    [Parameter]
+    public int VaultId { get; set; }
+
+    // Ce que tu affiches en “Intitulé” (ex: le champ Nom chiffré a un libellé)
+    private string TitleText =>
+        // Ici, on n’a que des blobs chiffrés — on met un placeholder lisible
+        // ou un identifiant. Plus tard, tu déclencheras un déchiffrement JS au clic.
+        $"Entrée #{Entry?.Id}";
+
+    private Task OnConsult()
+    {
+        // TODO: Appeler du JS pour déchiffrer Entry.* avec currentVault.key
+        // via IJSRuntime, ou ouvrir une modale détail.
+        return Task.CompletedTask;
+    }
+}

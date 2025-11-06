@@ -1,0 +1,98 @@
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.Identity.Web
+@attribute [Authorize]
+@inject ITokenAcquisition TokenAcquisition
+@inject Interop.CryptoInterop Crypto
+
+@if (IsVisible)
+{
+    <div class="modal-backdrop" @onclick="CloseModal">
+        <div class="modal-content" @onclick:stopPropagation="true">
+            <h2>Ajouter une entrée</h2>
+
+            <div class="form-group">
+                <label>Nom d’utilisateur</label>
+                <input id="ce-username" />
+            </div>
+
+            <div class="form-group">
+                <label>Mot de passe</label>
+                <input id="ce-password" type="password" autocomplete="new-password" />
+            </div>
+
+            <div class="form-group">
+                <label>URL</label>
+                <input id="ce-url" />
+            </div>
+
+            <div class="form-group">
+                <label>Notes</label>
+                <textarea id="ce-notes" rows="3"></textarea>
+            </div>
+
+            <div class="modal-actions">
+                <button @onclick="SubmitForm">Enregistrer</button>
+                <button @onclick="CloseModal">Annuler</button>
+            </div>
+
+            @if (!string.IsNullOrEmpty(_error))
+            {
+                <p style="color:red;margin-top:.5rem">@_error</p>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool IsVisible { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback OnCreated { get; set; }
+    [Parameter] public int VaultId { get; set; }
+
+    private bool _tokenPushed;
+    private string? _error;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !_tokenPushed)
+        {
+            var token = await TokenAcquisition.GetAccessTokenForUserAsync(new[]
+            {
+                "api://b8f83755-0f15-42f5-9a43-cedf7cc50c0a/access_as_user"
+            });
+            await Crypto.SetApiAccessTokenAsync(token);
+            _tokenPushed = true;
+        }
+    }
+
+    private async Task SubmitForm()
+    {
+        _error = null;
+
+        if (VaultId <= 0) { _error = "VaultId manquant."; return; }
+
+        try
+        {
+            var ok = await Crypto.CreateEntryFromModalAsync(VaultId, "https://localhost:7115");
+            if (ok)
+            {
+                if (OnCreated.HasDelegate) await OnCreated.InvokeAsync();
+                await CloseModal();
+            }
+            else
+            {
+                _error = "Échec lors de la création de l’entrée.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+    }
+    
+    private async Task CloseModal()
+    {
+        _error = null;
+        if (OnClose.HasDelegate) await OnClose.InvokeAsync();
+    }
+}

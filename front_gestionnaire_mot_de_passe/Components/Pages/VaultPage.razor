@@ -2,8 +2,11 @@
 @using api_chiffrement_csharp.EF.Tables
 @inject HttpClient Http
 @inject NavigationManager Navigation
+@inject Microsoft.Identity.Abstractions.IDownstreamApi DownstreamApi
 @using System.Text.Json
 @using front_gestionnaire_mot_de_passe.Components.Displayer
+@using front_gestionnaire_mot_de_passe.Components.CreateVaultEntryModal
+@rendermode InteractiveServer
 
 <PageTitle>Détails du coffre</PageTitle>
 
@@ -22,7 +25,12 @@ else
 
     <section class="menu_vault">
         <div class="menu_vault_top">
-            <button class="menu_button_create">+</button>
+            <button type="button" class="menu_button_create" @onclick="ShowModal">+</button>            
+            <CreateVaultEntryModal IsVisible="@_isModalVisible"
+                                   VaultId="@id"
+                                   OnClose="HideModal"
+                                   OnCreated="RefreshEntriesAsync" />
+            
             <button class="menu_button_share">Partager coffre-fort</button>
         </div>
 
@@ -37,19 +45,48 @@ else
     <h3 class="vault_title">Liste des mots de passe</h3>
     
     <section class="display_entries_zone">
-        
-        <Displayer/>
-        <Displayer/>
-        <Displayer/>
-        <Displayer/>
-
+        @if (_entries is null)
+        {
+            <p>Chargement…</p>
+        }
+        else if (_entries.Count == 0)
+        {
+            <p>Aucune entrée.</p>
+        }
+        else
+        {
+            @foreach (var e in _entries)
+            {
+                <Displayer Entry="e" VaultId="@id" />
+            }
+        }
     </section>
 }
 
 @code {
     [Parameter] public int id { get; set; }
     public Vault? VaultData { get; set; }
+    private bool _isModalVisible = false;
+    private List<VaultEntry>? _entries;
 
+
+    private void ShowModal()
+    {
+        _isModalVisible = true;
+        Console.WriteLine("ShowModal called, IsVisible=true");
+    }
+    private void HideModal() => _isModalVisible = false;
+    
+    private async Task RefreshEntriesAsync()
+    {
+        _entries = await DownstreamApi.GetForUserAsync<List<VaultEntry>>(
+            "DownstreamApi",
+            o => o.RelativePath = $"/Entry/VaultId?vaultId={id}" // ← ✅ ajoute la query directement ici
+        ) ?? new();
+    
+        StateHasChanged();
+    }
+    
     protected override async Task OnInitializedAsync()
     {
         var json = await Http.GetStringAsync("data/vaults.json");
@@ -59,5 +96,6 @@ else
         });
 
         VaultData = vaults?.FirstOrDefault(v => v.Id == id);
+        RefreshEntriesAsync();
     }
 }

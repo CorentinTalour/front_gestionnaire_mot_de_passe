@@ -29,6 +29,8 @@
     [Parameter] public bool IsVisible { get; set; }
     [Parameter] public EventCallback OnClose { get; set; }
     [Parameter] public int VaultId { get; set; }
+    [Parameter] public string VaultSalt { get; set; } = "";
+    [Parameter] public int VaultIterations { get; set; }
 
     private string _vaultPassword = string.Empty;
     private string? _errorMessage;
@@ -63,22 +65,26 @@
 
         if (VaultId <= 0) { _errorMessage = "VaultId manquant."; return; }
         if (string.IsNullOrWhiteSpace(_vaultPassword)) { _errorMessage = "Veuillez saisir le mot de passe maître."; return; }
+        if (string.IsNullOrWhiteSpace(VaultSalt) || VaultIterations <= 0) { _errorMessage = "Paramètres du coffre (salt/iterations) manquants."; return; }
 
         try
         {
-            var result = await Crypto.VerifyVaultPasswordAsync(VaultId, _vaultPassword, "https://localhost:7115");
-            bool ok = result.TryGetProperty("ok", out var okProp) && okProp.GetBoolean();
-
-            if (ok)
-            {
-                await CloseModal();
-                Nav.NavigateTo($"/VaultPage/{VaultId}");
-            }
-            else
+            // 1) Vérification côté serveur (ne modifie pas currentVault)
+            var check = await Crypto.VerifyVaultPasswordServerAsync(VaultId, _vaultPassword, "https://localhost:7115");
+            var ok = check.TryGetProperty("ok", out var okProp) && okProp.GetBoolean();
+            if (!ok)
             {
                 _errorMessage = "Mot de passe incorrect.";
                 StateHasChanged();
+                return;
             }
+
+            // 2) Armement local de la clé (PBKDF2 -> AES-GCM) avec salt + iterations
+            await Crypto.ArmVaultSessionAsync(VaultId, _vaultPassword, VaultSalt, VaultIterations);
+
+            // (hygiène) on ferme et on navigue
+            await CloseModal();
+            Nav.NavigateTo($"/VaultPage/{VaultId}");
         }
         catch (Exception ex)
         {
