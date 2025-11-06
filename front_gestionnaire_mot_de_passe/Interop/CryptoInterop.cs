@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
+using System.Text.Json;
 
 namespace front_gestionnaire_mot_de_passe.Interop;
 
@@ -17,12 +18,15 @@ public class CryptoInterop
 
     private async Task<IJSObjectReference> Mod()
     {
-        var url = new Uri(new Uri(_nav.BaseUri), "js/crypto.js?v=1").ToString();
+        var url = new Uri(new Uri(_nav.BaseUri), "js/crypto.js?v=19").ToString();
         return _mod ??= await _js.InvokeAsync<IJSObjectReference>("import", url);
     }
     
-    public async Task<object> CreateVaultVerifierFromInputAsync(string inputId, int iterations = 600_000)
-        => await (await Mod()).InvokeAsync<object>("createVaultVerifierFromInput", inputId, iterations);
+    public async Task SetApiAccessTokenAsync(string token) =>
+        await (await Mod()).InvokeVoidAsync("setApiAccessToken", token);
+    
+    public async Task<JsonElement> CreateVaultFromModalAsync(int iterations = 600_000, string apiBase = "https://localhost:7115") =>
+        await (await Mod()).InvokeAsync<JsonElement>("createVaultFromModal", iterations, apiBase);
 
     public async Task<object> OpenVaultFromInputAsync(int vaultId, string inputId, int autoLockMs = 300_000)
         => await (await Mod()).InvokeAsync<object>("openVaultFromInput", vaultId, inputId, autoLockMs);
@@ -41,4 +45,7 @@ public class CryptoInterop
 
     public async Task TouchVaultAsync()
         => await (await Mod()).InvokeVoidAsync("touchVault");
+    
+    public async Task<System.Text.Json.JsonElement> VerifyVaultPasswordAsync(int vaultId, string password, string apiBase = "https://localhost:7115")
+        => await (await Mod()).InvokeAsync<System.Text.Json.JsonElement>("verifyVaultPassword", vaultId, password, apiBase);
 }

@@ -1,0 +1,95 @@
+@using Microsoft.AspNetCore.Authorization
+@inject Microsoft.Identity.Web.ITokenAcquisition TokenAcquisition
+@inject Interop.CryptoInterop Crypto
+@inject NavigationManager Nav
+@attribute [Authorize]
+
+@if (IsVisible)
+{
+    <div class="modal-backdrop" @onclick="CloseModal">
+        <div class="modal-content" @onclick:stopPropagation="true">
+            <h2>Veuillez saisir le mot de passe maître</h2>
+            <div class="form-group">
+                <label>Mot de passe maître</label>
+                <input type="password" @bind="_vaultPassword" />
+            </div>
+            <div class="modal-actions">
+                <button @onclick="SubmitForm">Ouvrir</button>
+                <button @onclick="CloseModal">Annuler</button>
+            </div>
+            @if (!string.IsNullOrEmpty(_errorMessage))
+            {
+                <p style="color:red;">@_errorMessage</p>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool IsVisible { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public int VaultId { get; set; }
+
+    private string _vaultPassword = string.Empty;
+    private string? _errorMessage;
+    private bool _tokenPushed;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!IsVisible) return;
+        if (firstRender && !_tokenPushed)
+        {
+            try
+            {
+                var token = await TokenAcquisition.GetAccessTokenForUserAsync(new[]
+                {
+                    "api://b8f83755-0f15-42f5-9a43-cedf7cc50c0a/access_as_user"
+                });
+
+                await Crypto.SetApiAccessTokenAsync(token);
+                _tokenPushed = true;
+            }
+            catch (Microsoft.Identity.Web.MicrosoftIdentityWebChallengeUserException)
+            {
+                // L'utilisateur doit (re)consentir ou se reconnecter → redirige vers la page de login
+                Nav.NavigateTo($"authentication/login?returnUrl={Uri.EscapeDataString(Nav.Uri)}", forceLoad: true);
+            }
+        }
+    }
+
+    private async Task SubmitForm()
+    {
+        _errorMessage = null;
+
+        if (VaultId <= 0) { _errorMessage = "VaultId manquant."; return; }
+        if (string.IsNullOrWhiteSpace(_vaultPassword)) { _errorMessage = "Veuillez saisir le mot de passe maître."; return; }
+
+        try
+        {
+            var result = await Crypto.VerifyVaultPasswordAsync(VaultId, _vaultPassword, "https://localhost:7115");
+            bool ok = result.TryGetProperty("ok", out var okProp) && okProp.GetBoolean();
+
+            if (ok)
+            {
+                await CloseModal();
+                Nav.NavigateTo($"/VaultPage/{VaultId}");
+            }
+            else
+            {
+                _errorMessage = "Mot de passe incorrect.";
+                StateHasChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Erreur : {ex.Message}";
+        }
+    }
+
+    private async Task CloseModal()
+    {
+        _vaultPassword = "";
+        if (OnClose.HasDelegate)
+            await OnClose.InvokeAsync();
+    }
+}

@@ -1,10 +1,10 @@
 ﻿@page "/"
 @using api_chiffrement_csharp.EF.Tables
-@inject HttpClient Http
-@using System.Text.Json
 @using front_gestionnaire_mot_de_passe.Components.CreateVaultModal
 @using front_gestionnaire_mot_de_passe.Components.DisplayError
 @using front_gestionnaire_mot_de_passe.Components.VaultDisplay
+@using Microsoft.Identity.Abstractions
+@inject IDownstreamApi DownstreamApi
 @rendermode InteractiveServer
 
 <PageTitle>Home</PageTitle>
@@ -41,44 +41,43 @@
         <DisplayError />
     }
 
-    <CreateVaultModal IsVisible="@isModalVisible" OnClose="HideModal" />
+    <CreateVaultModal IsVisible="@_isModalVisibleCreateVault" OnClose="HideModal" />
 
 </div>
 
 @code {
     private string _searchText = string.Empty;
-    private bool isModalVisible = false;
+    private bool _isModalVisibleCreateVault = false;
 
-    private List<Vault> Vaults = new();
+    
+    private List<Vault> _vaults = new();
 
     private IEnumerable<Vault> FilteredVaults =>
-        Vaults.Where(v => string.IsNullOrWhiteSpace(_searchText)
+        _vaults.Where(v => string.IsNullOrWhiteSpace(_searchText)
                           || v.Name.Contains(_searchText, StringComparison.OrdinalIgnoreCase));
 
     private void ClearSearch() => _searchText = string.Empty;
-    private void ShowModal() => isModalVisible = true;
-    private void HideModal() => isModalVisible = false;
+    private void ShowModal() => _isModalVisibleCreateVault = true;
+    private void HideModal() => _isModalVisibleCreateVault = false;
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
-            var json = await Http.GetStringAsync("data/vaults.json");
+            _vaults = await DownstreamApi.GetForUserAsync<List<Vault>>(
+                "DownstreamApi",
+                options => options.RelativePath = "/Vault"
+            ) ?? new List<Vault>();
 
-            Vaults = JsonSerializer.Deserialize<List<Vault>>(json, new JsonSerializerOptions
+            Console.WriteLine($"✅ {_vaults.Count} coffres chargés.");
+            foreach (var v in _vaults)
             {
-                PropertyNameCaseInsensitive = true
-            }) ?? new List<Vault>();
-
-            Console.WriteLine($"✅ {Vaults.Count} coffres chargés.");
-
-            // 🔹 Affiche le détail de chaque coffre
-            foreach (var vault in Vaults)
-            {
-                Console.WriteLine($"Id: {vault.Id}, Name: {vault.Name}, Salt: {vault.Salt}, " +
-                  $"Password: {vault.Password}, CreatedAt: {vault.CreatedAt}, " +
-                  $"UpdatedAt: {vault.UpdatedAt}, UserId: {vault.UserId}");
+                Console.WriteLine($"Id: {v.Id}, Name: {v.Name}, Salt: {v.Salt}, Password: ********, CreatedAt: {v.CreatedAt}, UpdatedAt: {v.UpdatedAt}, UserId: {v.UserId}");
             }
+        }
+        catch (HttpRequestException ex)
+        {
+            Console.WriteLine($"❌ Erreur HTTP: {ex.StatusCode} — {ex.Message}");
         }
         catch (Exception ex)
         {

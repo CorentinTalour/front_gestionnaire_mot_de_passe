@@ -30,6 +30,15 @@ builder.Services.AddCascadingAuthenticationState();
 
 builder.Services.AddScoped<CryptoInterop>();
 
+// CORS pour le dev local
+builder.Services.AddCors(opt =>
+{
+    opt.AddPolicy("Dev", p =>
+        p.WithOrigins("https://localhost:7093")
+            .AllowAnyHeader()
+            .AllowAnyMethod());
+});
+
 builder.Services.AddRazorPages().AddMicrosoftIdentityUI();
 builder.Services.AddRazorComponents().AddInteractiveServerComponents();
 
@@ -44,6 +53,7 @@ builder.Services.AddScoped(sp =>
 var app = builder.Build();
 
 app.UseHttpsRedirection();
+app.UseCors("Dev");
 app.UseStaticFiles();
 app.UseAuthentication();
 app.UseAuthorization();
