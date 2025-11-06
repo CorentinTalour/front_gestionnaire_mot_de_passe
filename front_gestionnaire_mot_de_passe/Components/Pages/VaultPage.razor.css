@@ -1,0 +1,144 @@
+/* Conteneur principal */
+.menu_vault {
+    background-color: #111;
+    color: #fff;
+    padding: 1.5rem 2rem;
+    border-radius: 12px;
+    width: 100%;
+    margin: 2rem auto;
+    box-shadow: 0 0 15px rgba(255,105,180,0.3);
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    gap: 1.5rem;
+    border: 1px solid #222;
+}
+
+.menu_vault_top,
+.menu_vault_bottom {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+}
+
+.menu_vault .menu_title {
+    color: orange;
+    font-size: 2.3rem;
+    font-weight: 500;
+    text-align: center;
+    text-shadow: 0 0 5px rgba(255,165,0,0.6);
+}
+
+.menu_vault button {
+    background-color: #222;
+    color: #fff;
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 0.6rem 1.2rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: 500;
+}
+
+.menu_vault button:hover {
+    background: linear-gradient(to right, orange, hotpink);
+    color: #fff;
+    box-shadow: 0 0 8px rgba(255,105,180,0.5);
+    transform: scale(1.05);
+}
+
+.menu_button_create {
+    background: linear-gradient(to right, orange, pink);
+    color: #fff;
+    font-size: 1.5rem;
+    font-weight: bold;
+    border: none;
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 10px rgba(255,105,180,0.4);
+}
+
+@keyframes pulseGlow {
+    0% {
+        box-shadow: 0 0 10px rgba(255,105,180,0.3);
+        transform: scale(1);
+    }
+    50% {
+        box-shadow: 0 0 25px rgba(255,165,0,0.8);
+        transform: scale(1.08);
+    }
+    100% {
+        box-shadow: 0 0 10px rgba(255,105,180,0.3);
+        transform: scale(1);
+    }
+}
+
+.menu_button_create:hover {
+    transform: rotate(90deg) scale(1.15);
+    box-shadow: 0 0 30px rgba(255,165,0,0.9);
+    animation: none;
+}
+
+.menu_button_share {
+    background-color: #222;
+}
+
+.menu_button_remove_user {
+    background: linear-gradient(#222, #222) padding-box,
+    linear-gradient(to right, #ff4500, #ff1493) border-box;
+    border: 2px solid transparent;
+    border-radius: 8px;
+    color: #fff;
+    padding: 0.6rem 1.2rem;
+    font-weight: 500;
+}
+
+.menu_button_delete_vault {
+    background: linear-gradient(to right, #ff4500, #ff1493);
+    border: none;
+    color: #fff;
+    font-weight: bold;
+    box-shadow: 0 0 10px rgba(255,105,180,0.5);
+}
+
+.menu_button_delete_vault:hover {
+    box-shadow: 0 0 20px rgba(255,105,180,0.8);
+    transform: scale(1.05);
+}
+
+@media (max-width: 600px) {
+    .menu_vault_top,
+    .menu_vault_bottom {
+        flex-direction: column;
+        gap: 0.8rem;
+    }
+
+    .menu_title {
+        font-size: 1.4rem;
+    }
+}
+
+/* zone de display des entries */
+
+.display_entries_zone {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    row-gap: 1.5rem;
+}
+
+.vault_title {
+    text-align: center;
+    margin-bottom: 0.5rem;
+}
+ 
+
+ 
+ 
