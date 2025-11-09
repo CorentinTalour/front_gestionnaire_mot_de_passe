@@ -1,0 +1,254 @@
+[
+  {
+    "id": 1,
+    "userNameCypherId": 15,
+    "userNameCypher": {
+      "id": 15,
+      "cypherIv": "dXNlckl2MQ==",
+      "cypherTag": "dXNlclRhZzE=",
+      "cypher": "Rmxvcmlhbg=="
+    },
+    "passwordCypherId": 13,
+    "passwordCypher": {
+      "id": 13,
+      "cypherIv": "cGFzc0l2MQ==",
+      "cypherTag": "cGFzc1RhZzE=",
+      "cypher": "bW90ZGVwYXNzZTEyMw=="
+    },
+    "createdAt": "2025-10-27T12:45:00.0",
+    "updatedAt": "2026-12-05T14:50:00.0",
+    "noteCypherId": 12,
+    "noteCypher": {
+      "id": 12,
+      "cypherIv": "bm90ZUl2MQ=",
+      "cypherTag": "bm90ZVRZzE=",
+      "cypher": "VHLigJwgYm9uIHNpdGUgcG91ciBsZXMgYmxpbmQdGVzdHMgIQ=="
+    },
+    "urlCypherId": 14,
+    "urlCypher": {
+      "id": 14,
+      "cypherIv": "dXJsSXYx",
+      "cypherTag": "dXJsVGFnMQ==",
+      "cypher": "aHR0cHM6Ly93d3cuYmxpbmR0ZXN0LmNvbQ=="
+    },
+    "nomCypherId": 11,
+    "nomCypher": {
+      "id": 11,
+      "cypherIv": "bm9tSXYx",
+      "cypherTag": "bm9tVGFnMQ==",
+      "cypher": "Q29mZnJlIEFsdGVybmFudCBDaGlsbA=="
+    },
+    "vaultId": 1,
+    "vault": null
+  },
+  {
+    "id": 1,
+    "userNameCypherId": 16,
+    "userNameCypher": {
+      "id": 16,
+      "cypherIv": "dXNlckl2MQ==",
+      "cypherTag": "dXNlclRhZzE=",
+      "cypher": "Rmxvcmlhbg=="
+    },
+    "passwordCypherId": 13,
+    "passwordCypher": {
+      "id": 14,
+      "cypherIv": "cGFzc0l2MQ==",
+      "cypherTag": "cGFzc1RhZzE=",
+      "cypher": "bW90ZGVwYXNzZTEyMw=="
+    },
+    "createdAt": "2025-10-27T12:45:00.0",
+    "updatedAt": "2025-11-05T14:50:00.0",
+    "noteCypherId": 12,
+    "noteCypher": {
+      "id": 12,
+      "cypherIv": "bm90ZUl2MQ==",
+      "cypherTag": "bm90ZVRhZzE=",
+      "cypher": "VHLigJwgYm9uIHNpdGUgcG91ciBsZXMgYmxpbmQgdGVzdHMgIQ=="
+    },
+    "urlCypherId": 14,
+    "urlCypher": {
+      "id": 14,
+      "cypherIv": "dXJsSXYx",
+      "cypherTag": "dXJsVGFnMQ==",
+      "cypher": "aHR0cHM6Ly93d3cuYmxpbmR0ZXN0LmNvbQ=="
+    },
+    "nomCypherId": 11,
+    "nomCypher": {
+      "id": 11,
+      "cypherIv": "bm9tSXYx",
+      "cypherTag": "bm9tVGFnMQ==",
+      "cypher": "Q29mZnJlIEFsdGVybmFudCBDaGlsbA=="
+    },
+    "vaultId": 1,
+    "vault": null
+  },
+  {
+    "id": 2,
+    "userNameCypherId": 16,
+    "userNameCypher": {
+      "id": 16,
+      "cypherIv": "dXNlckl2Mg==",
+      "cypherTag": "dXNlclRhZzI=",
+      "cypher": "QWRyaWVu"
+    },
+    "passwordCypherId": 14,
+    "passwordCypher": {
+      "id": 14,
+      "cypherIv": "cGFzc0l2Mg==",
+      "cypherTag": "cGFzc1RhZzI=",
+      "cypher": "YmFybG92ZXIyMDI1"
+    },
+    "createdAt": "2025-10-28T11:44:00.0",
+    "updatedAt": "2025-11-05T14:50:00.0",
+    "noteCypherId": 13,
+    "noteCypher": {
+      "id": 13,
+      "cypherIv": "bm90ZUl2Mg==",
+      "cypherTag": "bm90ZVRhZzI=",
+      "cypher": "UGFydGVuYWlyZSBvZmZpY2llbCBkZXMgc29pcmVlcyBibGluZCB0ZXN0ICE="
+    },
+    "urlCypherId": 15,
+    "urlCypher": {
+      "id": 15,
+      "cypherIv": "dXJsSXYy",
+      "cypherTag": "dXJsVGFnMg==",
+      "cypher": "aHR0cHM6Ly93d3cuYmFyYWRyaWVuLmZy"
+    },
+    "nomCypherId": 12,
+    "nomCypher": {
+      "id": 12,
+      "cypherIv": "bm9tSXYy",
+      "cypherTag": "bm9tVGFnMg==",
+      "cypher": "Q29mZnJlIE1hbmFnZXIgUHJv"
+    },
+    "vaultId": 2,
+    "vault": null
+  },
+  {
+    "id": 2,
+    "userNameCypherId": 16,
+    "userNameCypher": {
+      "id": 16,
+      "cypherIv": "dXNlckl2Mg==",
+      "cypherTag": "dXNlclRhZzI=",
+      "cypher": "QWRyaWVu"
+    },
+    "passwordCypherId": 14,
+    "passwordCypher": {
+      "id": 14,
+      "cypherIv": "cGFzc0l2Mg==",
+      "cypherTag": "cGFzc1RhZzI=",
+      "cypher": "YmFybG92ZXIyMDI1"
+    },
+    "createdAt": "2025-10-28T11:44:00.0",
+    "updatedAt": "2025-11-05T14:50:00.0",
+    "noteCypherId": 13,
+    "noteCypher": {
+      "id": 13,
+      "cypherIv": "bm90ZUl2Mg==",
+      "cypherTag": "bm90ZVRhZzI=",
+      "cypher": "UGFydGVuYWlyZSBvZmZpY2llbCBkZXMgc29pcmVlcyBibGluZCB0ZXN0ICE="
+    },
+    "urlCypherId": 15,
+    "urlCypher": {
+      "id": 15,
+      "cypherIv": "dXJsSXYy",
+      "cypherTag": "dXJsVGFnMg==",
+      "cypher": "aHR0cHM6Ly93d3cuYmFyYWRyaWVuLmZy"
+    },
+    "nomCypherId": 12,
+    "nomCypher": {
+      "id": 12,
+      "cypherIv": "bm9tSXYy",
+      "cypherTag": "bm9tVGFnMg==",
+      "cypher": "Q29mZnJlIE1hbmFnZXIgUHJv"
+    },
+    "vaultId": 2,
+    "vault": null
+  },
+  {
+    "id": 3,
+    "userNameCypherId": 17,
+    "userNameCypher": {
+      "id": 17,
+      "cypherIv": "dXNlckl2Mw==",
+      "cypherTag": "dXNlclRhZzM=",
+      "cypher": "SnVsaWVu"
+    },
+    "passwordCypherId": 15,
+    "passwordCypher": {
+      "id": 15,
+      "cypherIv": "cGFzc0l2Mw==",
+      "cypherTag": "cGFzc1RhZzM=",
+      "cypher": "ZXhjbHVzaXZlMjAyNQ=="
+    },
+    "createdAt": "2025-10-29T10:43:00.0",
+    "updatedAt": "2025-11-05T14:50:00.0",
+    "noteCypherId": 14,
+    "noteCypher": {
+      "id": 14,
+      "cypherIv": "bm90ZUl2Mw==",
+      "cypherTag": "bm90ZVRhZzM=",
+      "cypher": "RXhjZWxsZW50ZSB2aXNpYmlsaXTDqWUgZXQgYW1iaWFuY2UgZ2FyYW50aWUgLg=="
+    },
+    "urlCypherId": 16,
+    "urlCypher": {
+      "id": 16,
+      "cypherIv": "dXJsSXYz",
+      "cypherTag": "dXJsVGFnMw==",
+      "cypher": "aHR0cHM6Ly93d3cuanVsaWVuYmFyLmZy"
+    },
+    "nomCypherId": 13,
+    "nomCypher": {
+      "id": 13,
+      "cypherIv": "bm9tSXYz",
+      "cypherTag": "bm9tVGFnMw==",
+      "cypher": "Q29mZnJlIFBhcnRpbmFpcmUgVklQ"
+    },
+    "vaultId": 3,
+    "vault": null
+  },
+  {
+    "id": 4,
+    "userNameCypherId": 18,
+    "userNameCypher": {
+      "id": 18,
+      "cypherIv": "dXNlckl2NA==",
+      "cypherTag": "dXNlclRhZzQ=",
+      "cypher": "QXVkcmV5"
+    },
+    "passwordCypherId": 16,
+    "passwordCypher": {
+      "id": 16,
+      "cypherIv": "cGFzc0l2NA==",
+      "cypherTag": "cGFzc1RhZzQ=",
+      "cypher": "bWVsb21hbmU5Mg=="
+    },
+    "createdAt": "2025-10-30T09:42:00.0",
+    "updatedAt": "2025-11-05T14:50:00.0",
+    "noteCypherId": 15,
+    "noteCypher": {
+      "id": 15,
+      "cypherIv": "bm90ZUl2NA==",
+      "cypherTag": "bm90ZVRhZzQ=",
+      "cypher": "ScOpYWRvcmUgcGFydGljaXBlLCDDqWNlc3QgZnVuIGV0IGNvbXDDqXRpdGlmICE="
+    },
+    "urlCypherId": 17,
+    "urlCypher": {
+      "id": 17,
+      "cypherIv": "dXJsSXY0",
+      "cypherTag": "dXJsVGFnNA==",
+      "cypher": "aHR0cHM6Ly93d3cuYmxpbmR0ZXN0cXVlZW4uY29t"
+    },
+    "nomCypherId": 14,
+    "nomCypher": {
+      "id": 14,
+      "cypherIv": "bm9tSXY0",
+      "cypherTag": "bm9tVGFnNA==",
+      "cypher": "Q29mZnJlIEFtaXMgJiBDdWx0dXJl"
+    },
+    "vaultId": 4,
+    "vault": null
+  }
+]

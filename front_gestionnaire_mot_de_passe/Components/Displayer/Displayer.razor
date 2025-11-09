@@ -1,16 +1,22 @@
-
-<!-- Composant permettant l'affichage des éléments mappés (entries, user...) -->
+@using front_gestionnaire_mot_de_passe.Components.Pages
+<!-- Components/Displayer.razor -->
 <div class="display-card">
-    
     <div class="display-card-header">
         <img src="cle_icon.jpg" alt="Icône de clé" class="vault-key-icon"/>
         <div class="display-info">
-            <p><strong>Intitulé : </strong> </p> 
+            <p><strong>Intitulé : @EntryData?.NomCypher</strong></p> 
         </div>
     </div>
     
     <div class="display-actions">
-        <button class="consult-btn" >Consulter</button>
+        <button class="consult-btn" @onclick="OnConsult">Consulter</button>
     </div>
-    
 </div>
+
+@code {
+    [Parameter, EditorRequired]
+    public VaultPage.EntryData EntryData { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback OnConsult { get; set; }
+}

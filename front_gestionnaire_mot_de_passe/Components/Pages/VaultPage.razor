@@ -1,63 +1,101 @@
 @page "/VaultPage/{id:int}"
-@using api_chiffrement_csharp.EF.Tables
-@inject HttpClient Http
-@inject NavigationManager Navigation
 @using System.Text.Json
 @using front_gestionnaire_mot_de_passe.Components.Displayer
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
 
 <PageTitle>Détails du coffre</PageTitle>
 
-
-@if (VaultData is null)
+@if (EntriesForVault is null)
 {
     <p>Chargement du coffre...</p>
 }
 else
 {
-    <!--<div class="vault-details">
-        <p><strong>Nom :</strong> @VaultData.Name</p>
-        <p><strong>Créé le :</strong> @VaultData.CreatedAt.ToString("dd/MM/yyyy HH:mm")</p>
-        <p><strong>Modifié le :</strong> @(VaultData.UpdatedAt?.ToString("dd/MM/yyyy HH:mm") ?? "Jamais")</p>
-    </div> -->
-
     <section class="menu_vault">
         <div class="menu_vault_top">
             <button class="menu_button_create">+</button>
             <button class="menu_button_share">Partager coffre-fort</button>
         </div>
 
-        <h2 class="menu_title">Votre coffre fort : Florent</h2>
+        <h2 class="menu_title">Votre coffre fort : @("Coffre " + id)</h2>
 
         <div class="menu_vault_bottom">
             <button class="menu_button_remove_user">Exclure utilisateur</button>
             <button class="menu_button_delete_vault">Supprimer coffre-fort</button>
         </div>
     </section>
-    
-    <h3 class="vault_title">Liste des mots de passe</h3>
-    
-    <section class="display_entries_zone">
-        
-        <Displayer/>
-        <Displayer/>
-        <Displayer/>
-        <Displayer/>
 
+    <h3 class="vault_title">Liste des mots de passe</h3>
+
+    <section class="display_entries_zone">
+        @if (!EntriesForVault.Any())
+        {
+            <p>Aucune entrée trouvée pour ce coffre.</p>
+        }
+        else
+        {
+            @foreach (var entry in EntriesForVault)
+            {
+                <Displayer EntryData="entry" OnConsult="() => ConsultEntry(entry.Id)" />
+            } 
+        }
     </section>
 }
 
 @code {
     [Parameter] public int id { get; set; }
-    public Vault? VaultData { get; set; }
+
+    public class EntryData
+    {
+        public int Id { get; set; }
+        public string NomCypher { get; set; } = "";
+    }
+
+    public List<EntryData>? EntriesForVault { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
-        var json = await Http.GetStringAsync("data/vaults.json");
-        var vaults = JsonSerializer.Deserialize<List<Vault>>(json, new JsonSerializerOptions
+        try
         {
-            PropertyNameCaseInsensitive = true
-        });
+           
+            var json = await Http.GetStringAsync("data/entries.json");
+            
+            var elements = JsonSerializer.Deserialize<List<JsonElement>>(json, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
 
-        VaultData = vaults?.FirstOrDefault(v => v.Id == id);
+            EntriesForVault = new List<EntryData>();
+
+            if (elements is not null)
+            {
+                foreach (var e in elements)
+                {
+                   //Ici je récupère vaultId dans chaque objet json, si la valeur existe bien et correspond à l'id de la page,
+                   //alors je la mets dans vaultProp. Si la valeur existe pas je passe à l'élément suivant.
+                    if (!e.TryGetProperty("vaultId", out var vaultProp) || vaultProp.GetInt32() != id)
+                        continue;
+
+                    EntriesForVault.Add(new EntryData
+                    {
+                        Id = e.GetProperty("id").GetInt32(),
+                        NomCypher = e.GetProperty("nomCypher").GetProperty("cypher").GetString() ?? "",
+                    });
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erreur de chargement des entries : {ex.Message}");
+            EntriesForVault = new List<EntryData>();
+        }
+        
+    }
+    
+    private void ConsultEntry(int entryId)
+    {
+        Navigation.NavigateTo($"/EntriesPage/{entryId}");
     }
 }
