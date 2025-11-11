@@ -1,10 +1,95 @@
 @page "/EntriesPage/{id:int}"
+@using System.Text.Json
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
 
-<h3>Détails de l’entrée</h3>
+<PageTitle>Détails de l’entrée</PageTitle>
 
-<p>Cette page est vide pour l’instant.</p>
-<p><strong>ID reçu :</strong> @id</p>
+@if (Entry == null)
+{
+    <p>Chargement de l’entrée...</p>
+}
+else
+{
+    <section class="entry-details">
+        <button class="entry-back-button" @onclick="BacktoVault">
+            ← Retour au coffre
+        </button>
+        <div class="entry-card">
+            <h2>@Entry.NomCypher</h2>
+            
+            <p><strong>Nom d'utilisateur :</strong> @Entry.UserNameCypher</p>
+            <p><strong>Mot de passe :</strong> @Entry.PasswordCypher</p>
+            <p><strong>Note :</strong> @Entry.NoteCypher</p>
+            <p><strong>URL :</strong> @Entry.UrlCypher</p>
+            <p><strong>Créé le :</strong> @Entry.CreatedAt.ToString("g")</p>
+            <p><strong>Mis à jour le :</strong> @Entry.UpdatedAt.ToString("g")</p>
+            <p><strong>ID du coffre :</strong> @Entry.VaultId</p>
+        </div>
+    </section>
+}
 
 @code {
     [Parameter] public int id { get; set; }
+
+    public class EntryData
+    {
+        public int Id { get; set; }
+        public string NomCypher { get; set; } = "";
+        public string UserNameCypher { get; set; } = "";
+        public string PasswordCypher { get; set; } = "";
+        public string NoteCypher { get; set; } = "";
+        public string UrlCypher { get; set; } = "";
+        public DateTime CreatedAt { get; set; }
+        public DateTime UpdatedAt { get; set; }
+        public int VaultId { get; set; }
+    }
+    
+    private void BacktoVault()
+    {
+        if (Entry is not null)
+            Navigation.NavigateTo($"/VaultPage/{Entry.VaultId}");
+    }
+
+    public EntryData? Entry { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var json = await Http.GetStringAsync("data/entries.json");
+            var elements = JsonSerializer.Deserialize<List<JsonElement>>(json, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
+
+            if (elements is not null)
+            {
+                foreach (var e in elements)
+                {
+                    if (e.GetProperty("id").GetInt32() == id)
+                    {
+                        Entry = new EntryData
+                        {
+                            Id = e.GetProperty("id").GetInt32(),
+                            UserNameCypher = e.GetProperty("userNameCypher").GetProperty("cypher").GetString() ?? "",
+                            PasswordCypher = e.GetProperty("passwordCypher").GetProperty("cypher").GetString() ?? "",
+                            NoteCypher = e.GetProperty("noteCypher").GetProperty("cypher").GetString() ?? "",
+                            UrlCypher = e.GetProperty("urlCypher").GetProperty("cypher").GetString() ?? "",
+                            NomCypher = e.GetProperty("nomCypher").GetProperty("cypher").GetString() ?? "",
+                            CreatedAt = e.GetProperty("createdAt").GetDateTime(),
+                            UpdatedAt = e.GetProperty("updatedAt").GetDateTime(),
+                            VaultId = e.GetProperty("vaultId").GetInt32()
+                        };
+                        break;
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erreur lors du chargement de l’entrée : {ex.Message}");
+        }
+    }
 }

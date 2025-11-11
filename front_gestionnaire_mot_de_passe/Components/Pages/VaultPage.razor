@@ -80,8 +80,10 @@ else
 
                     EntriesForVault.Add(new EntryData
                     {
-                        Id = e.GetProperty("id").GetInt32(),
-                        NomCypher = e.GetProperty("nomCypher").GetProperty("cypher").GetString() ?? "",
+                        Id = e.GetProperty("id").GetInt32(), 
+                       
+                        NomCypher = e.GetProperty("nomCypher").GetProperty("cypher").GetString() ?? "", 
+                        
                     });
                 }
             }

@@ -1,0 +1,86 @@
+/* ----- Conteneur principal de la page d'une entrée ----- */
+.entry-details {
+    background-color: #111;
+    color: #fff;
+    padding: 2rem 3rem;
+    border-radius: 12px;
+    width: 80%;
+    margin: 2rem auto;
+    box-shadow: 0 0 20px rgba(255, 105, 180, 0.3);
+    border: 1px solid #222;
+    display: flex;
+    flex-direction: column;
+    gap: 1.2rem;
+}
+
+/* ----- Titre principal ----- */
+.entry-details h2 {
+    color: orange;
+    font-size: 2rem;
+    font-weight: 600;
+    text-shadow: 0 0 6px rgba(255, 165, 0, 0.7);
+    border-bottom: 2px solid rgba(255, 165, 0, 0.5);
+    padding-bottom: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+/* ----- Libellés et contenus ----- */
+.entry-details p {
+    font-size: 1.1rem;
+    line-height: 1.5;
+    background-color: #1a1a1a;
+    padding: 0.7rem 1rem;
+    border-radius: 8px;
+    border: 1px solid #222;
+    box-shadow: inset 0 0 5px rgba(255, 105, 180, 0.2);
+}
+
+/* Les labels (fort) sont mis en valeur */
+.entry-details strong {
+    color: #ff69b4;
+    font-weight: 600;
+}
+
+/* ----- Animation légère au survol ----- */
+.entry-details p:hover {
+    transform: scale(1.02);
+    background: linear-gradient(to right, #222, #1a1a1a);
+    box-shadow: 0 0 10px rgba(255, 105, 180, 0.4);
+    transition: all 0.3s ease;
+}
+
+/* ----- Bouton retour / navigation ----- */
+.entry-back-button {
+    align-self: flex-start;
+    margin-bottom: 1rem;
+    background: linear-gradient(to right, orange, hotpink);
+    color: #fff;
+    font-weight: 600;
+    border: none;
+    padding: 0.6rem 1.2rem;
+    border-radius: 8px;
+    cursor: pointer;
+    box-shadow: 0 0 10px rgba(255, 105, 180, 0.4);
+    transition: all 0.3s ease;
+}
+
+.entry-back-button:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 15px rgba(255, 165, 0, 0.7);
+}
+
+/* ----- Responsive ----- */
+@media (max-width: 600px) {
+    .entry-details {
+        width: 95%;
+        padding: 1.5rem;
+    }
+
+    .entry-details h2 {
+        font-size: 1.6rem;
+    }
+
+    .entry-details p {
+        font-size: 1rem;
+    }
+}
