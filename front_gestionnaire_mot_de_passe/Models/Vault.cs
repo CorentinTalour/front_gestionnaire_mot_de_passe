@@ -1,7 +1,8 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using api_chiffrement_csharp.EF.Tables;
 
-namespace api_chiffrement_csharp.EF.Tables;
+namespace front_gestionnaire_mot_de_passe.Models;
 
 [Table("Vault")]
 public class Vault

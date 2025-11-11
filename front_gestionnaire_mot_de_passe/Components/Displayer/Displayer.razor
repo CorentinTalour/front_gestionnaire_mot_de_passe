@@ -1,22 +1,31 @@
-@using front_gestionnaire_mot_de_passe.Components.Pages
-<!-- Components/Displayer.razor -->
+@using front_gestionnaire_mot_de_passe.Models
+
 <div class="display-card">
     <div class="display-card-header">
         <img src="cle_icon.jpg" alt="Icône de clé" class="vault-key-icon"/>
         <div class="display-info">
-            <p><strong>Intitulé : @EntryData?.NomCypher</strong></p> 
+            <p><strong>Intitulé : @Entry.NomCypher?.Cypher </strong> </p> 
         </div>
     </div>
-    
     <div class="display-actions">
-        <button class="consult-btn" @onclick="OnConsult">Consulter</button>
+        <button class="consult-btn" >Consulter</button>
     </div>
 </div>
 
 @code {
     [Parameter, EditorRequired]
-    public VaultPage.EntryData EntryData { get; set; } = default!;
-
+    public VaultEntry Entry { get; set; } = default!;
     [Parameter]
-    public EventCallback OnConsult { get; set; }
+    public int VaultId { get; set; }
+
+    private string TitleText =>
+        // Ici, on n’a que des blobs chiffrés — on met un placeholder lisible ou un identifiant.
+        // Mettre un déclencheurs JS au clic pour déchiffrement.
+        $"Entrée #{Entry?.Id}";
+
+    private Task OnConsult()
+    {
+        // TODO: Appeler du JS pour déchiffrer Entry.* avec currentVault.key
+        return Task.CompletedTask;
+    }
 }

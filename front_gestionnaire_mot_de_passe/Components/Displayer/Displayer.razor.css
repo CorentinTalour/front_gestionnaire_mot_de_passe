@@ -10,7 +10,7 @@
     width: 75%;
     display: flex;
     justify-content: space-around;
-    
+
     gap: 1rem;
     transition: transform 0.3s ease, box-shadow 0.3s ease;
 }

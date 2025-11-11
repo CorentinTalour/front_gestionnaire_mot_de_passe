@@ -1,4 +1,6 @@
 @using api_chiffrement_csharp.EF.Tables
+@using front_gestionnaire_mot_de_passe.Components.OpenVaultModal
+@using front_gestionnaire_mot_de_passe.Models
 
 
 <div class="vault-card">
@@ -18,8 +20,15 @@
     </div>
 
     <div class="vault-actions">
-        <button class="consult-btn" @onclick="ConsultVault">Consulter</button>
+        <button class="consult-btn" @onclick="ShowModal">Consulter</button>
     </div>
+    
+    <OpenVaultModal 
+        IsVisible="@_isModalVisible"
+        VaultId="@VaultData.Id"
+        VaultSalt="@VaultData.Salt"
+        VaultIterations="@VaultData.NbIteration"
+        OnClose="HideModal"/>
 </div>
 
 @code {
@@ -28,10 +37,9 @@
 
     [Inject]
     private NavigationManager Navigation { get; set; } = default!;
+    
+    private bool _isModalVisible = false;
 
-    // Redirection vers la page vault{id}
-    private void ConsultVault()
-    {
-        Navigation.NavigateTo($"/VaultPage/{VaultData.Id}");
-    }
+    private void ShowModal() => _isModalVisible = true;
+    private void HideModal() => _isModalVisible = false;
 }
