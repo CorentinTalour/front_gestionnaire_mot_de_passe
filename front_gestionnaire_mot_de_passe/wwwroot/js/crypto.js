@@ -1,43 +1,63 @@
 // ==============================
 // Helpers généraux
 // ==============================
-const enc  = new TextEncoder();
-const b64  = a => btoa(String.fromCharCode(...new Uint8Array(a)));
+const enc = new TextEncoder();
+const b64 = a => btoa(String.fromCharCode(...new Uint8Array(a)));
 const b64d = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
 const TAG_BYTES = 16;
 
 // Token Bearer injecté depuis Blazor
 let _apiAccessToken = null;
-export function setApiAccessToken(token) { _apiAccessToken = token; }
-function authHeaders() { return _apiAccessToken ? { Authorization: `Bearer ${_apiAccessToken}` } : {}; }
+
+export function setApiAccessToken(token) {
+    _apiAccessToken = token;
+}
+
+function authHeaders() {
+    return _apiAccessToken ? {Authorization: `Bearer ${_apiAccessToken}`} : {};
+}
 
 // ==============================
 // Gestion du vault en RAM + auto-lock
 // ==============================
-let currentVault = { id: null, key: /** @type {CryptoKey|null} */(null) };
+let currentVault = {id: null, key: /** @type {CryptoKey|null} */(null)};
 let _autoLockTimer = /** @type {ReturnType<typeof setTimeout>|null} */ (null);
 let _autoLockMsDefault = 300000;
 
-function _clearAutoLock() { if (_autoLockTimer) { clearTimeout(_autoLockTimer); _autoLockTimer = null; } }
-function _armAutoLock(ms) { _clearAutoLock(); _autoLockTimer = setTimeout(() => lockNow(), ms); }
+function _clearAutoLock() {
+    if (_autoLockTimer) {
+        clearTimeout(_autoLockTimer);
+        _autoLockTimer = null;
+    }
+}
+
+function _armAutoLock(ms) {
+    _clearAutoLock();
+    _autoLockTimer = setTimeout(() => lockNow(), ms);
+}
 
 export function lockNow() {
-    currentVault = { id: null, key: null };
+    currentVault = {id: null, key: null};
     _clearAutoLock();
     clearVaultList();
 }
-export function touchVault() { if (currentVault.key) _armAutoLock(_autoLockMsDefault); }
+
+export function touchVault() {
+    if (currentVault.key) _armAutoLock(_autoLockMsDefault);
+}
 
 // ==============================
 // Utilitaires chiffrement
 // ==============================
 function splitCtAndTag(buf) {
     const u = new Uint8Array(buf);
-    return { cipher: u.slice(0, u.length - TAG_BYTES), tag: u.slice(u.length - TAG_BYTES) };
+    return {cipher: u.slice(0, u.length - TAG_BYTES), tag: u.slice(u.length - TAG_BYTES)};
 }
+
 function joinCtAndTag(cipherU8, tagU8) {
     const out = new Uint8Array(cipherU8.length + tagU8.length);
-    out.set(cipherU8, 0); out.set(tagU8, cipherU8.length);
+    out.set(cipherU8, 0);
+    out.set(tagU8, cipherU8.length);
     return out.buffer;
 }
 
@@ -45,20 +65,20 @@ async function encFieldWithVaultKey(text, aad) {
     if (!currentVault.key) throw new Error("Vault non ouvert");
     const iv = crypto.getRandomValues(new Uint8Array(12));
     const ctFull = await crypto.subtle.encrypt(
-        { name: "AES-GCM", iv, additionalData: aad ? enc.encode(aad) : undefined },
+        {name: "AES-GCM", iv, additionalData: aad ? enc.encode(aad) : undefined},
         currentVault.key,
         enc.encode(text ?? "")
     );
-    const { cipher, tag } = splitCtAndTag(ctFull);
+    const {cipher, tag} = splitCtAndTag(ctFull);
     touchVault();
-    return { cipher, tag, iv };
+    return {cipher, tag, iv};
 }
 
 async function decFieldWithVaultKey(cipherU8, tagU8, ivU8, aad) {
     if (!currentVault.key) throw new Error("Vault non ouvert");
     const full = joinCtAndTag(cipherU8, tagU8);
     const pt = await crypto.subtle.decrypt(
-        { name: "AES-GCM", iv: ivU8, additionalData: aad ? enc.encode(aad) : undefined },
+        {name: "AES-GCM", iv: ivU8, additionalData: aad ? enc.encode(aad) : undefined},
         currentVault.key,
         full
     );
@@ -73,41 +93,42 @@ export async function createVaultVerifierFromInput(inputId, iterations = 600000)
     const password = document.getElementById(inputId)?.value ?? "";
     const res = await fetch("/api/vaults", {
         method: "POST",
-        headers: { "Content-Type": "application/json", ...authHeaders() },
-        body: JSON.stringify({ password, iterations })
+        headers: {"Content-Type": "application/json", ...authHeaders()},
+        body: JSON.stringify({password, iterations})
     });
     if (!res.ok) throw new Error("Création du vault échouée");
     return await res.json();
 }
 
 export async function openVault(vaultId, password, autoLockMs = 300000) {
-    const p = await (await fetch(`/api/vaults/${vaultId}/params`, { headers: authHeaders() })).json();
+    const p = await (await fetch(`/api/vaults/${vaultId}/params`, {headers: authHeaders()})).json();
     const check = await (await fetch(`/api/vaults/${vaultId}/check`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", ...authHeaders() },
-        body: JSON.stringify({ password })
+        headers: {"Content-Type": "application/json", ...authHeaders()},
+        body: JSON.stringify({password})
     })).json();
-    if (!check.ok) return { ok: false, error: "Mot de passe maître invalide." };
+    if (!check.ok) return {ok: false, error: "Mot de passe maître invalide."};
 
-    const pwKey = await crypto.subtle.importKey("raw", enc.encode(password), { name: "PBKDF2" }, false, ["deriveKey"]);
+    const pwKey = await crypto.subtle.importKey("raw", enc.encode(password), {name: "PBKDF2"}, false, ["deriveKey"]);
     const aesKey = await crypto.subtle.deriveKey(
-        { name: "PBKDF2", hash: "SHA-256", salt: b64d(p.vaultSaltB64), iterations: p.iterations },
+        {name: "PBKDF2", hash: "SHA-256", salt: b64d(p.vaultSaltB64), iterations: p.iterations},
         pwKey,
-        { name: "AES-GCM", length: 256 },
+        {name: "AES-GCM", length: 256},
         false,
         ["encrypt", "decrypt"]
     );
 
-    currentVault = { id: vaultId, key: aesKey };
+    currentVault = {id: vaultId, key: aesKey};
     _autoLockMsDefault = autoLockMs || 300000;
     _armAutoLock(_autoLockMsDefault);
-    return { ok: true };
+    return {ok: true};
 }
 
 export async function openVaultFromInput(vaultId, inputId, autoLockMs = 300000) {
     const pwd = document.getElementById(inputId)?.value ?? "";
     const res = await openVault(vaultId, pwd, autoLockMs);
-    const el = document.getElementById(inputId); if (el) el.value = "";
+    const el = document.getElementById(inputId);
+    if (el) el.value = "";
     return res;
 }
 
@@ -120,16 +141,16 @@ export async function encryptEntryForOpenVault() {
     const name = get("name"), pwd = get("pwd"), url = get("url"), notes = get("notes");
     const ns = `vault:${currentVault.id}`;
 
-    const p  = await encFieldWithVaultKey(pwd,   `${ns}|field:password`);
-    const n  = await encFieldWithVaultKey(name,  `${ns}|field:name`);
-    const u  = await encFieldWithVaultKey(url,   `${ns}|field:url`);
+    const p = await encFieldWithVaultKey(pwd, `${ns}|field:password`);
+    const n = await encFieldWithVaultKey(name, `${ns}|field:name`);
+    const u = await encFieldWithVaultKey(url, `${ns}|field:url`);
     const no = await encFieldWithVaultKey(notes, `${ns}|field:notes`);
 
     return {
-        cipherPasswordB64: b64(p.cipher),  tagPasswordB64: b64(p.tag),  ivPasswordB64: b64(p.iv),
-        cipherNameB64:     b64(n.cipher),  tagNameB64:     b64(n.tag),  ivNameB64:     b64(n.iv),
-        cipherUrlB64:      b64(u.cipher),  tagUrlB64:      b64(u.tag),  ivUrlB64:      b64(u.iv),
-        cipherNotesB64:    b64(no.cipher), tagNotesB64:    b64(no.tag), ivNotesB64:    b64(no.iv)
+        cipherPasswordB64: b64(p.cipher), tagPasswordB64: b64(p.tag), ivPasswordB64: b64(p.iv),
+        cipherNameB64: b64(n.cipher), tagNameB64: b64(n.tag), ivNameB64: b64(n.iv),
+        cipherUrlB64: b64(u.cipher), tagUrlB64: b64(u.tag), ivUrlB64: b64(u.iv),
+        cipherNotesB64: b64(no.cipher), tagNotesB64: b64(no.tag), ivNotesB64: b64(no.iv)
     };
 }
 
@@ -137,9 +158,9 @@ export async function decryptVaultEntry(record) {
     const ns = `vault:${currentVault.id}`;
     const out = {};
     out.password = await decFieldWithVaultKey(b64d(record.cipherPasswordB64), b64d(record.tagPasswordB64), b64d(record.ivPasswordB64), `${ns}|field:password`);
-    out.name     = await decFieldWithVaultKey(b64d(record.cipherNameB64),     b64d(record.tagNameB64),     b64d(record.ivNameB64),     `${ns}|field:name`);
-    out.url      = await decFieldWithVaultKey(b64d(record.cipherUrlB64),      b64d(record.tagUrlB64),      b64d(record.ivUrlB64),      `${ns}|field:url`);
-    out.notes    = await decFieldWithVaultKey(b64d(record.cipherNotesB64),    b64d(record.tagNotesB64),    b64d(record.ivNotesB64),    `${ns}|field:notes`);
+    out.name = await decFieldWithVaultKey(b64d(record.cipherNameB64), b64d(record.tagNameB64), b64d(record.ivNameB64), `${ns}|field:name`);
+    out.url = await decFieldWithVaultKey(b64d(record.cipherUrlB64), b64d(record.tagUrlB64), b64d(record.ivUrlB64), `${ns}|field:url`);
+    out.notes = await decFieldWithVaultKey(b64d(record.cipherNotesB64), b64d(record.tagNotesB64), b64d(record.ivNotesB64), `${ns}|field:notes`);
     return out;
 }
 
@@ -197,7 +218,7 @@ export async function createVaultFromModal(iterations = 600000, apiBase = "https
     if (!root) throw new Error("Modal introuvable (.modal-content)");
 
     const vaultNameEl = root.querySelector('input[type="text"]');
-    const vaultPwdEl  = root.querySelector('input[type="password"]');
+    const vaultPwdEl = root.querySelector('input[type="password"]');
 
     const name = (vaultNameEl?.value ?? "").trim();
     const password = vaultPwdEl?.value ?? "";
@@ -206,7 +227,7 @@ export async function createVaultFromModal(iterations = 600000, apiBase = "https
     try {
         res = await fetch(`${apiBase}/Vault`, {
             method: "POST",
-            headers: { "Content-Type": "application/json", ...authHeaders() },
+            headers: {"Content-Type": "application/json", ...authHeaders()},
             body: JSON.stringify({
                 name,
                 salt: "",
@@ -229,7 +250,7 @@ export async function createVaultFromModal(iterations = 600000, apiBase = "https
 
     // Vide les champs
     if (vaultNameEl) vaultNameEl.value = "";
-    if (vaultPwdEl)  vaultPwdEl.value  = "";
+    if (vaultPwdEl) vaultPwdEl.value = "";
 
     return json;
 }
@@ -242,26 +263,26 @@ export async function createVaultFromModal(iterations = 600000, apiBase = "https
  */
 // Vérifie uniquement auprès de l'API. Ne touche PAS à currentVault.
 export async function verifyVaultPasswordServer(vaultId, password, apiBase = "https://localhost:7115") {
-    if (!vaultId || !password) return { ok: false, error: "Champs manquants" };
+    if (!vaultId || !password) return {ok: false, error: "Champs manquants"};
 
     try {
         const res = await fetch(`${apiBase}/Vault/${vaultId}/check`, {
             method: "POST",
-            headers: { "Content-Type": "application/json", ...authHeaders() },
-            body: JSON.stringify({ passwordClear: password })
+            headers: {"Content-Type": "application/json", ...authHeaders()},
+            body: JSON.stringify({passwordClear: password})
         });
 
         if (!res.ok) {
             const text = await res.text().catch(() => "");
             console.error("Erreur HTTP check:", res.status, res.statusText, text);
-            return { ok: false, error: `HTTP ${res.status}` };
+            return {ok: false, error: `HTTP ${res.status}`};
         }
 
         const json = await res.json();               // <-- { ok: true/false }
-        return json && json.ok ? { ok: true } : { ok: false, error: "Mot de passe incorrect" };
+        return json && json.ok ? {ok: true} : {ok: false, error: "Mot de passe incorrect"};
     } catch (e) {
         console.error("Erreur JS verifyVaultPasswordServer:", e);
-        return { ok: false, error: e.message };
+        return {ok: false, error: e.message};
     }
 }
 
@@ -271,16 +292,16 @@ export async function armVaultSession(vaultId, password, vaultSaltB64, iteration
         throw new Error("Paramètres manquants pour armer la session du coffre.");
     }
 
-    const pwKey = await crypto.subtle.importKey("raw", enc.encode(password), { name: "PBKDF2" }, false, ["deriveKey"]);
+    const pwKey = await crypto.subtle.importKey("raw", enc.encode(password), {name: "PBKDF2"}, false, ["deriveKey"]);
     const aesKey = await crypto.subtle.deriveKey(
-        { name: "PBKDF2", hash: "SHA-256", salt: b64d(vaultSaltB64), iterations },
+        {name: "PBKDF2", hash: "SHA-256", salt: b64d(vaultSaltB64), iterations},
         pwKey,
-        { name: "AES-GCM", length: 256 },
+        {name: "AES-GCM", length: 256},
         false,
         ["encrypt", "decrypt"]
     );
 
-    currentVault = { id: vaultId, key: aesKey };
+    currentVault = {id: vaultId, key: aesKey};
     touchVault();
     return true;
 }
@@ -290,36 +311,36 @@ export async function openVaultAfterVerify(vaultId, password, vaultSaltB64, iter
     const check = await verifyVaultPasswordServer(vaultId, password, apiBase);
     if (!check.ok) return check;
     await armVaultSession(vaultId, password, vaultSaltB64, iterations);
-    return { ok: true };
+    return {ok: true};
 }
 
 // utilitaire: fabrique un PostCypherObj à partir d'un texte clair
 async function makeCypherObj(value, aad) {
-    const { cipher, tag, iv } = await encFieldWithVaultKey(value ?? "", aad);
+    const {cipher, tag, iv} = await encFieldWithVaultKey(value ?? "", aad);
     return {
-        baseCypher:    b64(cipher), // Uint8Array -> Base64
+        baseCypher: b64(cipher),
         baseCypherTag: b64(tag),
-        baseCypherIv:  b64(iv)
+        baseCypherIv: b64(iv)
         // ne pas envoyer "aad" si ton modèle C# ne le prévoit pas
     };
 }
 
 export async function createEntryFromModal(vaultId, apiBase = "https://localhost:7115") {
     // 1) Récupération des champs DOM
-    const userEl  = document.getElementById("ce-username");
-    const pwdEl   = document.getElementById("ce-password");
-    const urlEl   = document.getElementById("ce-url");
+    const userEl = document.getElementById("ce-username");
+    const pwdEl = document.getElementById("ce-password");
+    const urlEl = document.getElementById("ce-url");
     const notesEl = document.getElementById("ce-notes");
 
     if (!(userEl instanceof HTMLInputElement)) throw new Error("#ce-username introuvable");
-    if (!(pwdEl  instanceof HTMLInputElement)) throw new Error("#ce-password introuvable");
-    if (!(urlEl  instanceof HTMLInputElement)) throw new Error("#ce-url introuvable");
+    if (!(pwdEl instanceof HTMLInputElement)) throw new Error("#ce-password introuvable");
+    if (!(urlEl instanceof HTMLInputElement)) throw new Error("#ce-url introuvable");
     if (!(notesEl instanceof HTMLTextAreaElement)) throw new Error("#ce-notes introuvable");
 
     const username = userEl.value ?? "";
     const password = pwdEl.value ?? "";
-    const url      = urlEl.value ?? "";
-    const notes    = notesEl.value ?? "";
+    const url = urlEl.value ?? "";
+    const notes = notesEl.value ?? "";
 
     // 2) Vérifie que la clé de vault est bien en RAM
     if (!currentVault?.key || currentVault.id == null) {
@@ -330,14 +351,13 @@ export async function createEntryFromModal(vaultId, apiBase = "https://localhost
     const ns = `vault:${vaultId}`;
     const userNameCypherObj = await makeCypherObj(username, `${ns}|field:username`);
     const passwordCypherObj = await makeCypherObj(password, `${ns}|field:password`);
-    const urlCypherObj      = await makeCypherObj(url,      `${ns}|field:url`);
-    const noteCypherObj     = await makeCypherObj(notes,    `${ns}|field:notes`);
+    const urlCypherObj = await makeCypherObj(url, `${ns}|field:url`);
+    const noteCypherObj = await makeCypherObj(notes, `${ns}|field:notes`);
 
-    // Si ton modèle attend aussi un "Nom" (nom lisible de l'entrée),
-    // on peut, à défaut d’un champ dédié, réutiliser le username ou laisser vide.
-    const nomCypherObj      = await makeCypherObj(username, `${ns}|field:name`);
 
-    // 4) Payload conforme à PostEntryObj
+    const nomCypherObj = await makeCypherObj(username, `${ns}|field:name`);
+
+    // Payload conforme à PostEntryObj
     const payload = {
         vaultId,
         userNameCypherObj,
@@ -347,10 +367,10 @@ export async function createEntryFromModal(vaultId, apiBase = "https://localhost
         nomCypherObj
     };
 
-    // 5) Appel API
+    // Appel API    
     const res = await fetch(`${apiBase}/Entry`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", ...authHeaders() },
+        headers: {"Content-Type": "application/json", ...authHeaders()},
         body: JSON.stringify(payload)
     });
 
@@ -359,10 +379,10 @@ export async function createEntryFromModal(vaultId, apiBase = "https://localhost
         throw new Error(`Erreur API Entry: ${res.status} ${text}`);
     }
 
-    // 6) Nettoyage UI
-    userEl.value  = "";
-    pwdEl.value   = "";
-    urlEl.value   = "";
+    // Nettoyage UI
+    userEl.value = "";
+    pwdEl.value = "";
+    urlEl.value = "";
     notesEl.value = "";
 
     // touche le timer d’auto-lock

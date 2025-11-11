@@ -17,12 +17,6 @@
 }
 else
 {
-    <!--<div class="vault-details">
-        <p><strong>Nom :</strong> @VaultData.Name</p>
-        <p><strong>Créé le :</strong> @VaultData.CreatedAt.ToString("dd/MM/yyyy HH:mm")</p>
-        <p><strong>Modifié le :</strong> @(VaultData.UpdatedAt?.ToString("dd/MM/yyyy HH:mm") ?? "Jamais")</p>
-    </div> -->
-
     <section class="menu_vault">
         <div class="menu_vault_top">
             <button type="button" class="menu_button_create" @onclick="ShowModal">+</button>            
@@ -81,7 +75,7 @@ else
     {
         _entries = await DownstreamApi.GetForUserAsync<List<VaultEntry>>(
             "DownstreamApi",
-            o => o.RelativePath = $"/Entry/VaultId?vaultId={id}" // ← ✅ ajoute la query directement ici
+            o => o.RelativePath = $"/Entry/VaultId?vaultId={id}"
         ) ?? new();
     
         StateHasChanged();
