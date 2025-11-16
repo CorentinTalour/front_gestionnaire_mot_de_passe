@@ -1,3 +1,4 @@
+@using front_gestionnaire_mot_de_passe.Components.PasswordStrengthMeter
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.Identity.Web
 @attribute [Authorize]
@@ -17,7 +18,7 @@
 
             <div class="form-group">
                 <label>Mot de passe</label>
-                <input id="ce-password" type="password" autocomplete="new-password" />
+                <input id="ce-password" type="password" @bind="_password" autocomplete="new-password" />
             </div>
 
             <div class="form-group">
@@ -29,6 +30,8 @@
                 <label>Notes</label>
                 <textarea id="ce-notes" rows="3"></textarea>
             </div>
+            
+            <PasswordStrengthMeter Password="@_password" />
 
             <div class="modal-actions">
                 <button @onclick="SubmitForm">Enregistrer</button>
@@ -48,6 +51,7 @@
     [Parameter] public EventCallback OnClose { get; set; }
     [Parameter] public EventCallback OnCreated { get; set; }
     [Parameter] public int VaultId { get; set; }
+    private string _password = "";
 
     private bool _tokenPushed;
     private string? _error;

@@ -1,6 +1,7 @@
 ﻿@page "/"
 @using front_gestionnaire_mot_de_passe.Components.CreateVaultModal
 @using front_gestionnaire_mot_de_passe.Components.DisplayError
+@using front_gestionnaire_mot_de_passe.Components.OpenVaultModal
 @using front_gestionnaire_mot_de_passe.Components.VaultDisplay
 @using front_gestionnaire_mot_de_passe.Models
 @using Microsoft.Identity.Abstractions
@@ -33,7 +34,7 @@
     {
         @foreach (var vault in FilteredVaults)
         {
-            <VaultCard VaultData="vault" />
+            <VaultCard VaultData="vault" OnOpenVault="OpenVault" />
         }
     }
     else
@@ -42,6 +43,17 @@
     }
 
     <CreateVaultModal IsVisible="@_isModalVisibleCreateVault" OnClose="HideModal" />
+    
+    @if (_selectedVault is not null)
+    {
+        <OpenVaultModal 
+            IsVisible="@_isOpenVaultVisible"
+            VaultId="@_selectedVault.Id"
+            VaultSalt="@_selectedVault.Salt"
+            VaultIterations="@_selectedVault.NbIteration"
+            OnClose="CloseVault"
+        />
+    }
 
 </div>
 
@@ -82,5 +94,20 @@
         {
             Console.WriteLine($"❌ Erreur lors du chargement des coffres : {ex.Message}");
         }
+    }
+    
+    private Vault? _selectedVault;
+    private bool _isOpenVaultVisible;
+
+    private void OpenVault(Vault vault)
+    {
+        _selectedVault = vault;
+        _isOpenVaultVisible = true;
+    }
+
+    private void CloseVault()
+    {
+        _isOpenVaultVisible = false;
+        _selectedVault = null;
     }
 }

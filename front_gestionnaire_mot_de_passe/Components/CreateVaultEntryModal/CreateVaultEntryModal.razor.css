@@ -1,3 +1,7 @@
+
+
+
+
 .modal-backdrop {
     position: fixed;
     top: 0;
@@ -27,7 +31,9 @@
 
 .form-group {
     margin-bottom: 1rem;
+    
 }
+
 
 .form-group label {
     display: block;
@@ -68,4 +74,9 @@
 .modal-actions button:last-child {
     background-color: #333;
     color: #fff;
+}
+
+
+#ce-notes {
+    width: 100%;
 }

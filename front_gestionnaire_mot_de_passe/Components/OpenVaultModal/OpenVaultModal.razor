@@ -28,9 +28,9 @@
 @code {
     [Parameter] public bool IsVisible { get; set; }
     [Parameter] public EventCallback OnClose { get; set; }
-    [Parameter] public int VaultId { get; set; }
-    [Parameter] public string VaultSalt { get; set; } = "";
-    [Parameter] public int VaultIterations { get; set; }
+    [Parameter] public int? VaultId { get; set; }
+    [Parameter] public string? VaultSalt { get; set; } = "";
+    [Parameter] public int? VaultIterations { get; set; }
 
     private string _vaultPassword = string.Empty;
     private string? _errorMessage;
