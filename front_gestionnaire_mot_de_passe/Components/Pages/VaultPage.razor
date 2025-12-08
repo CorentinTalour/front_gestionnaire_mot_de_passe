@@ -28,7 +28,7 @@ else
             <button class="menu_button_share">Partager coffre-fort</button>
         </div>
 
-        <h2 class="menu_title">Votre coffre fort : Florent</h2>
+        <h2 class="menu_title">Votre coffre fort </h2>
 
         <div class="menu_vault_bottom">
             <button class="menu_button_remove_user">Exclure utilisateur</button>
@@ -90,6 +90,6 @@ else
         });
 
         VaultData = vaults?.FirstOrDefault(v => v.Id == id);
-        RefreshEntriesAsync();
+        await RefreshEntriesAsync();
     }
 }

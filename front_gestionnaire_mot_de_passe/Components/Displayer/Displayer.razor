@@ -1,4 +1,6 @@
 @using front_gestionnaire_mot_de_passe.Models
+@rendermode InteractiveServer
+
 
 <div class="display-card">
     <div class="display-card-header">
@@ -8,15 +10,49 @@
         </div>
     </div>
     <div class="display-actions">
-        <button class="consult-btn" >Consulter</button>
+        <button class="consult-btn" @onclick="OpenModal" >Consulter</button>
     </div>
 </div>
+
+@if (_showModal)
+{
+    <div class="modal-layout" @onclick="CloseModal">
+        <section class="entry-details" @onclick:stopPropagation>
+            <button class="entry-back-button" @onclick="CloseModal">
+                ← Retour au coffre
+            </button>
+            <div class="entry-card">
+                <h2>@Entry.NomCypher</h2>
+                
+                <p><strong>Nom d'utilisateur :</strong> @Entry.UserNameCypher</p>
+                <p><strong>Mot de passe :</strong> @Entry.PasswordCypher</p>
+                <p><strong>Note :</strong> @Entry.NoteCypher</p>
+                <p><strong>URL :</strong> @Entry.UrlCypher</p>
+                <p><strong>Créé le :</strong> @Entry.CreatedAt.ToString("g")</p>
+                <p><strong>Mis à jour le :</strong> @Entry.UpdatedAt.ToString()</p>
+                <p><strong>ID du coffre :</strong> @Entry.VaultId</p>
+            </div>
+        </section>
+    </div>
+}
 
 @code {
     [Parameter, EditorRequired]
     public VaultEntry Entry { get; set; } = default!;
     [Parameter]
     public int VaultId { get; set; }
+    
+    private bool _showModal;
+
+    private void OpenModal()
+    {
+        _showModal = true;
+    }
+
+    private void CloseModal()
+    {
+        _showModal = false;
+    }
 
     private string TitleText =>
         // Ici, on n’a que des blobs chiffrés — on met un placeholder lisible ou un identifiant.
@@ -26,6 +62,8 @@
     private Task OnConsult()
     {
         // TODO: Appeler du JS pour déchiffrer Entry.* avec currentVault.key
-        return Task.CompletedTask;
+         return Task.CompletedTask;
+
     }
+   
 }

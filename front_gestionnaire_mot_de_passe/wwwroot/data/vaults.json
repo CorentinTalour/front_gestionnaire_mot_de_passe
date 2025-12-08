@@ -38,5 +38,15 @@
     "UpdatedAt": null,
     "Password": "********",
     "UserId": 4
+  },
+  {
+    "Id": 5,
+    "Name": "Coffre test 5",
+    "Salt": "salt4",
+    "NbIteration": 4000,
+    "CreatedAt": "2025-11-02T10:00:00",
+    "UpdatedAt": null,
+    "Password": "********",
+    "UserId": 4
   }
 ]
