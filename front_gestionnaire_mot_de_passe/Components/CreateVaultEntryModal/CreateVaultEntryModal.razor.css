@@ -34,6 +34,23 @@
     
 }
 
+.form_group_button {
+    width: 100%;
+    display: block;
+    margin-top: 0.5rem;
+    background: linear-gradient(to right, orange, hotpink)!important;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 0.6rem;
+    cursor: pointer;
+    margin-bottom: 1rem ;
+}
+
+.form_group_button:hover {
+    opacity: 0.85;
+}
+
 
 .form-group label {
     display: block;
