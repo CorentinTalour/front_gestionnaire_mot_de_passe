@@ -18,7 +18,7 @@ public class CryptoInterop
 
     private async Task<IJSObjectReference> Mod()
     {
-        var url = new Uri(new Uri(_nav.BaseUri), "js/crypto.js?v=19").ToString();
+        var url = new Uri(new Uri(_nav.BaseUri), "js/crypto.js?v=20").ToString();
         return _mod ??= await _js.InvokeAsync<IJSObjectReference>("import", url);
     }
     
@@ -61,4 +61,13 @@ public class CryptoInterop
         int? vaultId, string password, string vaultSaltB64, int? iterations) =>
         await (await Mod()).InvokeVoidAsync(
             "armVaultSession", vaultId, password, vaultSaltB64, iterations);
+    
+    public async Task DecryptEntryToDomAsync(int vaultId, object entry, object ids)
+        => await (await Mod()).InvokeVoidAsync("decryptEntryToDom", vaultId, entry, ids);
+
+    public async Task CopyDomTextToClipboardAsync(string elementId)
+        => await (await Mod()).InvokeVoidAsync("copyDomTextToClipboard", elementId);
+    
+    public async Task TogglePasswordVisibilityAsync(string elementId)
+        => await (await Mod()).InvokeVoidAsync("togglePasswordVisibility", elementId);
 }

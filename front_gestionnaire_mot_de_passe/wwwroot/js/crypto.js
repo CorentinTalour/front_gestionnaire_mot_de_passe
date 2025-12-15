@@ -390,3 +390,99 @@ export async function createEntryFromModal(vaultId, apiBase = "https://localhost
 
     return true;
 }
+
+
+
+
+
+
+
+
+function asU8(x) {
+    if (!x) return new Uint8Array();
+    if (x instanceof Uint8Array) return x;
+    if (Array.isArray(x)) return new Uint8Array(x);
+    if (typeof x === "string") return b64d(x);   // si un jour ça arrive en base64
+    throw new Error("Type cypher invalide: " + typeof x);
+}
+
+export async function decryptEntryToDom(vaultId, entry, ids) {
+    if (!currentVault?.key) throw new Error("Vault non ouvert (clé AES absente).");
+
+    const ns = `vault:${vaultId}`;
+    const setText = (id, value) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = value ?? "";
+    };
+
+    const dec = async (obj, aad) => {
+        if (!obj) return "";
+        const c  = asU8(obj.cypher ?? obj.baseCypher);
+        const t  = asU8(obj.cypherTag ?? obj.baseCypherTag);
+        const iv = asU8(obj.cypherIv ?? obj.baseCypherIv);
+        return await decFieldWithVaultKey(c, t, iv, aad);
+    };
+
+    // tes propriétés sont en camelCase d’après ton log
+    setText(ids.nameId,     await dec(entry.nomCypher,      `${ns}|field:name`));
+    setText(ids.usernameId, await dec(entry.userNameCypher, `${ns}|field:username`));
+    const clearPwd = await dec(entry.passwordCypher, `${ns}|field:password`);
+
+    // on garde le clair en RAM JS (pas dans le DOM)
+    _plainSecretsByElementId.set(ids.passwordId, clearPwd);
+    _visibleByElementId.set(ids.passwordId, false);
+
+    // affichage masqué par défaut
+    setText(ids.passwordId, maskPassword(clearPwd));    setText(ids.urlId,      await dec(entry.urlCypher,      `${ns}|field:url`));
+    setText(ids.notesId,    await dec(entry.noteCypher,     `${ns}|field:notes`));
+
+    touchVault();
+}
+
+// export async function copyDomTextToClipboard(elementId) {
+//     const el = document.getElementById(elementId);
+//     const text = el?.textContent ?? "";
+//     if (text) await navigator.clipboard.writeText(text);
+//     touchVault();
+// }
+
+const _plainSecretsByElementId = new Map(); // elementId -> cleartext password
+const _visibleByElementId = new Map();      // elementId -> bool
+
+function maskPassword(pwd) {
+    if (!pwd) return "";
+    // même longueur que le mdp (optionnel), sinon fixe
+    return "•".repeat(Math.max(8, pwd.length));
+}
+
+
+export function togglePasswordVisibility(elementId) {
+    const el = document.getElementById(elementId);
+    if (!el) return;
+
+    const clearPwd = _plainSecretsByElementId.get(elementId) ?? "";
+    const visible = _visibleByElementId.get(elementId) ?? false;
+
+    if (!visible) {
+        el.textContent = clearPwd;
+        _visibleByElementId.set(elementId, true);
+    } else {
+        el.textContent = maskPassword(clearPwd);
+        _visibleByElementId.set(elementId, false);
+    }
+
+    touchVault();
+}
+
+export async function copyDomTextToClipboard(elementId) {
+    const clearPwd = _plainSecretsByElementId.get(elementId);
+
+    const textToCopy = (typeof clearPwd === "string" && clearPwd.length > 0)
+        ? clearPwd
+        : (document.getElementById(elementId)?.textContent ?? "");
+
+    if (!textToCopy) return;
+
+    await navigator.clipboard.writeText(textToCopy);
+    touchVault();
+}
