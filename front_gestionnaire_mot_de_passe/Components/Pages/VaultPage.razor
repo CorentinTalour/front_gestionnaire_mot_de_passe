@@ -1,21 +1,15 @@
 @page "/VaultPage/{id:int}"
-@inject HttpClient Http
 @inject NavigationManager Navigation
 @inject Microsoft.Identity.Abstractions.IDownstreamApi DownstreamApi
-@using System.Text.Json
 @using front_gestionnaire_mot_de_passe.Components.Displayer
 @using front_gestionnaire_mot_de_passe.Components.CreateVaultEntryModal
 @using front_gestionnaire_mot_de_passe.Models
 @using front_gestionnaire_mot_de_passe.Components.DeleteVaultModal
+@using front_gestionnaire_mot_de_passe.Components.OpenVaultModal
+@inject front_gestionnaire_mot_de_passe.Interop.CryptoInterop Crypto
 @rendermode InteractiveServer
 
 <PageTitle>Détails du coffre</PageTitle>
-
-
-@* @if (VaultData is null) *@
-@* { *@
-@*     <p>Il n'y a aucun mot de passe d'enregistrer dans ce coffre...</p> *@
-@* } *@
 
     <section class="menu_vault">
         <div class="menu_vault_top">
@@ -28,7 +22,7 @@
             <button class="menu_button_share">Partager coffre-fort</button>
         </div>
 
-        <h2 class="menu_title">Votre coffre fort </h2>
+        <h2 class="menu_title">Votre coffre fort @(VaultData?.Name)</h2>
 
         <div class="menu_vault_bottom">
             <button class="menu_button_remove_user">Exclure utilisateur</button>
@@ -61,19 +55,24 @@
                   OnClose="HideDeleteModal"
                   OnConfirm="DeleteVault" />
 
+<OpenVaultModal IsVisible="@_isReopenModalVisible"
+                VaultId="@id"
+                VaultSalt="@VaultData?.Salt"
+                VaultIterations="@VaultData?.NbIteration"
+                OnClose="OnReopenModalClose" />
 
 @code {
     [Parameter] public int id { get; set; }
     public Vault? VaultData { get; set; }
     private bool _isModalVisible = false;
     private bool _isDeleteModalVisible = false;
+    private bool _isReopenModalVisible = false;
     private List<VaultEntry>? _entries;
 
 
     private void ShowModal()
     {
         _isModalVisible = true;
-        Console.WriteLine("ShowModal called, IsVisible=true");
     }
     
     
@@ -81,14 +80,17 @@
     
     protected override async Task OnInitializedAsync()
     {
-        /*var json = await Http.GetStringAsync("data/vaults.json");
-        var vaults = JsonSerializer.Deserialize<List<Vault>>(json, new JsonSerializerOptions
+        try 
         {
-            PropertyNameCaseInsensitive = true
-        });
-
-        VaultData = vaults?.FirstOrDefault(v => v.Id == id);
-        */
+            VaultData = await DownstreamApi.GetForUserAsync<Vault>(
+                "DownstreamApi",
+                o => o.RelativePath = $"/Vault/{id}"
+            );
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erreur chargement vault: {ex.Message}");
+        }
         
         _entries = await DownstreamApi.GetForUserAsync<List<VaultEntry>>(
             "DownstreamApi",
@@ -97,11 +99,31 @@
     
         StateHasChanged();
     }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Vérifier si le coffre est ouvert en RAM (JS)
+            var isOpen = await Crypto.IsVaultOpenAsync(id);
+            if (!isOpen)
+            {
+                // Si pas ouvert (ex: refresh page), on demande le mot de passe
+                _isReopenModalVisible = true;
+                StateHasChanged();
+            }
+        }
+    }
+
+    private void OnReopenModalClose()
+    {
+        _isReopenModalVisible = false;
+        StateHasChanged();
+    }
     
     private void ShowDeleteModal()
     {
         _isDeleteModalVisible = true;
-        Console.WriteLine("ShowModal called, IsVisible=true");
     }
 
     private void HideDeleteModal()
@@ -131,3 +153,4 @@
         }
     }
 }
+

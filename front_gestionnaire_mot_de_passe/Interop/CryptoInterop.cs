@@ -70,4 +70,7 @@ public class CryptoInterop
     
     public async Task TogglePasswordVisibilityAsync(string elementId)
         => await (await Mod()).InvokeVoidAsync("togglePasswordVisibility", elementId);
+
+    public async Task<bool> IsVaultOpenAsync(int vaultId)
+        => await (await Mod()).InvokeAsync<bool>("isVaultOpen", vaultId);
 }

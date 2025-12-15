@@ -42,6 +42,12 @@ export function lockNow() {
     clearVaultList();
 }
 
+export function isVaultOpen(vaultId) {
+    // On vérifie si l'ID correspond (si on veut être strict) et si la clé existe
+    // Note : vaultId vient souvent en string ou int, attention au type. "==" gère ça.
+    return (currentVault.id == vaultId) && !!currentVault.key;
+}
+
 export function touchVault() {
     if (currentVault.key) _armAutoLock(_autoLockMsDefault);
 }
