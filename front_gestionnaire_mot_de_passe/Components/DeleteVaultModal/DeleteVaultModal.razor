@@ -1,0 +1,38 @@
+
+
+@if (IsVisible)
+{
+    <div class="modal-delete-wrapper" @onclick="CloseModal">
+        <div class="modal-delete-content" >
+            <h2>Êtes-vous sûr de vouloir supprimer ce coffre ?</h2>
+
+            <div class="modal-delete-actions">
+                <button class="btn-danger" @onclick="ConfirmDelete">
+                    Confirmer
+                </button>
+                <button @onclick="CloseModal">
+                    Annuler
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool IsVisible { get; set; }
+
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback OnConfirm { get; set; }
+
+    private async Task CloseModal()
+    {
+        if (OnClose.HasDelegate)
+            await OnClose.InvokeAsync();
+    }
+
+    private async Task ConfirmDelete()
+    {
+        if (OnConfirm.HasDelegate)
+            await OnConfirm.InvokeAsync();
+    }
+}

@@ -6,6 +6,7 @@
 @using front_gestionnaire_mot_de_passe.Components.Displayer
 @using front_gestionnaire_mot_de_passe.Components.CreateVaultEntryModal
 @using front_gestionnaire_mot_de_passe.Models
+@using front_gestionnaire_mot_de_passe.Components.DeleteVaultModal
 @rendermode InteractiveServer
 
 <PageTitle>Détails du coffre</PageTitle>
@@ -15,8 +16,7 @@
 @* { *@
 @*     <p>Il n'y a aucun mot de passe d'enregistrer dans ce coffre...</p> *@
 @* } *@
-else
-{
+
     <section class="menu_vault">
         <div class="menu_vault_top">
             <button type="button" class="menu_button_create" @onclick="ShowModal">+</button>            
@@ -32,35 +32,41 @@ else
 
         <div class="menu_vault_bottom">
             <button class="menu_button_remove_user">Exclure utilisateur</button>
-            <button class="menu_button_delete_vault">Supprimer coffre-fort</button>
+            <button type="button" class="menu_button_delete_vault" @onclick="ShowDeleteModal">Supprimer coffre-fort</button>
+            
         </div>
     </section>
     
     <h3 class="vault_title">Liste des mots de passe</h3>
     
-    <section class="display_entries_zone">
-        @if (_entries is null)
+<section class="display_entries_zone">
+    @if (_entries is null)
+    {
+        <p>Chargement…</p>
+    }
+    else if (_entries.Count == 0)
+    {
+        <p>Aucune entrée.</p>
+    }
+    else
+    {
+        @foreach (var e in _entries)
         {
-            <p>Chargement…</p>
+            <Displayer Entry="e" VaultId="@id" />
         }
-        else if (_entries.Count == 0)
-        {
-            <p>Aucune entrée.</p>
-        }
-        else
-        {
-            @foreach (var e in _entries)
-            {
-                <Displayer Entry="e" VaultId="@id" />
-            }
-        }
-    </section>
-}
+    }
+</section>
+
+<DeleteVaultModal IsVisible="@_isDeleteModalVisible"
+                  OnClose="HideDeleteModal"
+                  OnConfirm="DeleteVault" />
+
 
 @code {
     [Parameter] public int id { get; set; }
     public Vault? VaultData { get; set; }
     private bool _isModalVisible = false;
+    private bool _isDeleteModalVisible = false;
     private List<VaultEntry>? _entries;
 
 
@@ -69,6 +75,8 @@ else
         _isModalVisible = true;
         Console.WriteLine("ShowModal called, IsVisible=true");
     }
+    
+    
     private void HideModal() => _isModalVisible = false;
     
     protected override async Task OnInitializedAsync()
@@ -88,5 +96,38 @@ else
         ) ?? new();
     
         StateHasChanged();
+    }
+    
+    private void ShowDeleteModal()
+    {
+        _isDeleteModalVisible = true;
+        Console.WriteLine("ShowModal called, IsVisible=true");
+    }
+
+    private void HideDeleteModal()
+    {
+        _isDeleteModalVisible = false;
+    }
+    
+    private async Task DeleteVault()
+    {
+        try
+        {
+            await DownstreamApi.CallApiForUserAsync(
+                "DownstreamApi",
+                options =>
+                {
+                    options.HttpMethod = HttpMethod.Delete.ToString();
+                    options.RelativePath = $"/Vault/{id}";
+                });
+            
+            _isDeleteModalVisible = false;
+            
+            Navigation.NavigateTo("/");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erreur suppression coffre : {ex.Message}");
+        }
     }
 }

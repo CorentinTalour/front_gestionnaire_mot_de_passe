@@ -69,3 +69,8 @@
     background-color: #333;
     color: #fff;
 }
+
+.show_password_button{
+    margin-top: 1rem;
+    background-color: red!important;
+}
