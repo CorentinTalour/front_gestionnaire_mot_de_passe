@@ -11,10 +11,10 @@
 <PageTitle>Détails du coffre</PageTitle>
 
 
-@if (VaultData is null)
-{
-    <p>Chargement du coffre...</p>
-}
+@* @if (VaultData is null) *@
+@* { *@
+@*     <p>Il n'y a aucun mot de passe d'enregistrer dans ce coffre...</p> *@
+@* } *@
 else
 {
     <section class="menu_vault">
@@ -23,7 +23,7 @@ else
             <CreateVaultEntryModal IsVisible="@_isModalVisible"
                                    VaultId="@id"
                                    OnClose="HideModal"
-                                   OnCreated="RefreshEntriesAsync" />
+                                    />
             
             <button class="menu_button_share">Partager coffre-fort</button>
         </div>
@@ -71,25 +71,22 @@ else
     }
     private void HideModal() => _isModalVisible = false;
     
-    private async Task RefreshEntriesAsync()
-    {
-        _entries = await DownstreamApi.GetForUserAsync<List<VaultEntry>>(
-            "DownstreamApi",
-            o => o.RelativePath = $"/Entry/VaultId?vaultId={id}"
-        ) ?? new();
-    
-        StateHasChanged();
-    }
-    
     protected override async Task OnInitializedAsync()
     {
-        var json = await Http.GetStringAsync("data/vaults.json");
+        /*var json = await Http.GetStringAsync("data/vaults.json");
         var vaults = JsonSerializer.Deserialize<List<Vault>>(json, new JsonSerializerOptions
         {
             PropertyNameCaseInsensitive = true
         });
 
         VaultData = vaults?.FirstOrDefault(v => v.Id == id);
-        await RefreshEntriesAsync();
+        */
+        
+        _entries = await DownstreamApi.GetForUserAsync<List<VaultEntry>>(
+            "DownstreamApi",
+            o => o.RelativePath = $"/Entry/VaultId?vaultId={id}"
+        ) ?? new();
+    
+        StateHasChanged();
     }
 }
