@@ -1,10 +1,12 @@
 @using System.Text.Json
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.Identity.Web
+@using front_gestionnaire_mot_de_passe.Components.PasswordStrengthMeter
 @attribute [Authorize]
 @attribute [AuthorizeForScopes(Scopes = new[] { "api://b8f83755-0f15-42f5-9a43-cedf7cc50c0a/access_as_user" })]
 @inject ITokenAcquisition TokenAcquisition
 @inject Interop.CryptoInterop Crypto
+
 
 @if (IsVisible)
 {
@@ -17,7 +19,13 @@
             </div>
             <div class="form-group">
                 <label>Mot de passe :</label>
-                <input type="password" @bind="_vaultPassword" />
+                <input type="@(_showPassword ? "text" : "password")" @bind="_vaultPassword" />
+                <button class="show_password_button"  @onclick="TogglePasswordVisibility">
+                    @(_showPassword ? "🙈" : "👁️")
+                </button>
+            </div>
+            <div>
+                <PasswordStrengthMeter Password="@_vaultPassword" />
             </div>
             <div class="modal-actions">
                 <button @onclick="SubmitForm">Créer</button>
@@ -35,6 +43,12 @@
     private bool _tokenPushed;
     private string _vaultName = string.Empty;
     private string _vaultPassword = string.Empty;
+    private bool _showPassword = false;
+    
+    private void TogglePasswordVisibility()
+    {
+        _showPassword = !_showPassword;
+    }
     
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {

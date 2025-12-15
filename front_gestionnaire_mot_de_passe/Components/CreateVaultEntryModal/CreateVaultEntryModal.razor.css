@@ -90,10 +90,12 @@
 
 .modal-actions button:last-child {
     background-color: #333;
+
     color: #fff;
 }
-
 
 #ce-notes {
     width: 100%;
 }
+
+
