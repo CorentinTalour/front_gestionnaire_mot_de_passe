@@ -1,6 +1,7 @@
 @using front_gestionnaire_mot_de_passe.Models
 @rendermode InteractiveServer
 @inject front_gestionnaire_mot_de_passe.Interop.CryptoInterop Crypto
+@inject Microsoft.Identity.Abstractions.IDownstreamApi DownstreamApi
 
 <div class="display-card">
     <div class="display-card-header">
@@ -19,9 +20,14 @@
 {
     <div class="modal-layout" @onclick="CloseModal">
         <section class="entry-details" @onclick:stopPropagation="true">
-            <button class="entry-back-button" type="button" @onclick="CloseModal">
-                ← Retour au coffre
-            </button>
+            <div class="entry-button">
+                <button class="entry-back-button" type="button" @onclick="CloseModal">
+                    ← Retour au coffre
+                </button>
+                <button class="entry-back-button" type="button" @onclick="DeleteVaultEntry">
+                    Supprimer cette ligne
+                </button>
+            </div>
 
             <div class="entry-card">
                 <h2><span id="@DomId("name")">…</span></h2>
@@ -144,6 +150,35 @@
         try
         {
             await Crypto.TogglePasswordVisibilityAsync(DomId("password"));
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+    }
+
+    private async Task DeleteVaultEntry()
+    {
+        _error = null;
+
+        try
+        {
+            HttpResponseMessage res = await DownstreamApi.CallApiForUserAsync(
+                "DownstreamApi",
+                options =>
+                {
+                    options.HttpMethod = HttpMethod.Delete.Method;
+                    options.RelativePath = $"/Entry?entryId={Entry.Id}";
+                });
+
+            if (!res.IsSuccessStatusCode)
+            {
+                string body = await res.Content.ReadAsStringAsync();
+                _error = $"DELETE échoué: {(int)res.StatusCode} {res.ReasonPhrase} {body}";
+                return;
+            }
+            
+            CloseModal();
         }
         catch (Exception ex)
         {

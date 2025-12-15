@@ -81,6 +81,11 @@
    Modal / Détails entrée
 ========================= */
 
+.entry-button {
+    display: flex;
+    justify-content: space-between;
+}
+
 .modal-layout {
     position: fixed;
     inset: 0;
