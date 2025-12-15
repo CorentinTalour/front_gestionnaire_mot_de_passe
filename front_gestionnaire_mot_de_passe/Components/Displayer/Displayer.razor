@@ -1,69 +1,153 @@
 @using front_gestionnaire_mot_de_passe.Models
 @rendermode InteractiveServer
-
+@inject front_gestionnaire_mot_de_passe.Interop.CryptoInterop Crypto
 
 <div class="display-card">
     <div class="display-card-header">
-        <img src="cle_icon.jpg" alt="Icône de clé" class="vault-key-icon"/>
+        <img src="cle_icon.jpg" alt="Icône de clé" class="vault-key-icon" />
         <div class="display-info">
-            <p><strong>Intitulé : @Entry.NomCypher?.Cypher </strong> </p> 
+            <p><strong>Entrée #@Entry.Id</strong></p>
         </div>
     </div>
+
     <div class="display-actions">
-        <button class="consult-btn" @onclick="OpenModal" >Consulter</button>
+        <button class="consult-btn" type="button" @onclick="OpenModalAsync">Consulter</button>
     </div>
 </div>
 
 @if (_showModal)
 {
     <div class="modal-layout" @onclick="CloseModal">
-        <section class="entry-details" @onclick:stopPropagation>
-            <button class="entry-back-button" @onclick="CloseModal">
+        <section class="entry-details" @onclick:stopPropagation="true">
+            <button class="entry-back-button" type="button" @onclick="CloseModal">
                 ← Retour au coffre
             </button>
+
             <div class="entry-card">
-                <h2>@Entry.NomCypher</h2>
-                
-                <p><strong>Nom d'utilisateur :</strong> @Entry.UserNameCypher</p>
-                <p><strong>Mot de passe :</strong> @Entry.PasswordCypher</p>
-                <p><strong>Note :</strong> @Entry.NoteCypher</p>
-                <p><strong>URL :</strong> @Entry.UrlCypher</p>
+                <h2><span id="@DomId("name")">…</span></h2>
+
+                <p>
+                    <strong>Nom d'utilisateur :</strong>
+                    <span id="@DomId("username")">…</span>
+                </p>
+
+                <div class="pwd-row">
+                    <div class="pwd-left">
+                        <strong>Mot de passe :</strong>
+                        <span id="@DomId("password")">••••••••</span>
+                    </div>
+
+                    <div class="pwd-actions">
+                        <button type="button" class="toggle-btn" @onclick="TogglePasswordAsync">👁️</button>
+                        <button type="button" class="copy-btn" @onclick="CopyPasswordAsync">Copier</button>
+                    </div>
+                </div>
+
+                <p>
+                    <strong>Note :</strong>
+                    <span id="@DomId("notes")">…</span>
+                </p>
+
+                <p>
+                    <strong>URL :</strong>
+                    <span id="@DomId("url")">…</span>
+                </p>
+
                 <p><strong>Créé le :</strong> @Entry.CreatedAt.ToString("g")</p>
-                <p><strong>Mis à jour le :</strong> @Entry.UpdatedAt.ToString()</p>
+                <p><strong>Mis à jour le :</strong> @(FormatUpdatedAt())</p>
                 <p><strong>ID du coffre :</strong> @Entry.VaultId</p>
+
+                @if (!string.IsNullOrWhiteSpace(_error))
+                {
+                    <p class="error-text">@_error</p>
+                }
             </div>
         </section>
     </div>
 }
 
 @code {
-    [Parameter, EditorRequired]
-    public VaultEntry Entry { get; set; } = default!;
-    [Parameter]
-    public int VaultId { get; set; }
-    
-    private bool _showModal;
+    [Parameter, EditorRequired] public VaultEntry Entry { get; set; } = default!;
+    [Parameter] public int VaultId { get; set; }
 
-    private void OpenModal()
+    private bool _showModal;
+    private bool _needDecrypt;
+    private string? _error;
+
+    private readonly string _uid = Guid.NewGuid().ToString("N");
+    private string DomId(string field) => $"entry-{Entry.Id}-{_uid}-{field}";
+
+    private async Task OpenModalAsync()
     {
+        _error = null;
         _showModal = true;
+        _needDecrypt = true;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_showModal && _needDecrypt)
+        {
+            _needDecrypt = false;
+
+            try
+            {
+                await Crypto.DecryptEntryToDomAsync(VaultId, Entry, new
+                {
+                    nameId = DomId("name"),
+                    usernameId = DomId("username"),
+                    passwordId = DomId("password"),
+                    urlId = DomId("url"),
+                    notesId = DomId("notes")
+                });
+            }
+            catch (Exception ex)
+            {
+                _error = ex.Message;
+                await InvokeAsync(StateHasChanged);
+            }
+        }
     }
 
     private void CloseModal()
     {
+        _error = null;
         _showModal = false;
     }
 
-    private string TitleText =>
-        // Ici, on n’a que des blobs chiffrés — on met un placeholder lisible ou un identifiant.
-        // Mettre un déclencheurs JS au clic pour déchiffrement.
-        $"Entrée #{Entry?.Id}";
-
-    private Task OnConsult()
+    private async Task CopyPasswordAsync()
     {
-        // TODO: Appeler du JS pour déchiffrer Entry.* avec currentVault.key
-         return Task.CompletedTask;
-
+        try
+        {
+            await Crypto.CopyDomTextToClipboardAsync(DomId("password"));
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
     }
-   
+
+    private string FormatUpdatedAt()
+    {
+        var prop = Entry.GetType().GetProperty("UpdatedAt");
+        var val = prop?.GetValue(Entry);
+
+        if (val is DateTime dt) return dt.ToString("g");
+        if (val is DateTimeOffset dto) return dto.LocalDateTime.ToString("g");
+
+        return val?.ToString() ?? "Aucune mise à jour";
+    }
+    
+    private async Task TogglePasswordAsync()
+    {
+        try
+        {
+            await Crypto.TogglePasswordVisibilityAsync(DomId("password"));
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+    }
 }

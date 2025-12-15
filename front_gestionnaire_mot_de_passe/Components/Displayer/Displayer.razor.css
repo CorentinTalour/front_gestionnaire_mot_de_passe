@@ -1,13 +1,10 @@
-
-
 /* Carte principale */
-
 .display-card {
     background-color: #111;
     color: #fff;
     border: 1px solid #222;
     border-radius: 12px;
-    box-shadow: 0 0 15px rgba(255,105,180,0.2);
+    box-shadow: 0 0 15px rgba(255, 105, 180, 0.2);
     padding: 1rem 1.5rem;
     width: 75%;
     display: flex;
@@ -15,7 +12,6 @@
     gap: 1rem;
     transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
-
 
 /* En-tête */
 .display-card-header {
@@ -31,23 +27,14 @@
     width: 32px;
     height: 32px;
     object-fit: contain;
-    filter: drop-shadow(0 0 5px rgba(255,165,0,0.6));
+    filter: drop-shadow(0 0 5px rgba(255, 165, 0, 0.6));
     transition: transform 0.3s ease, filter 0.3s ease;
 }
 
 /* Effet visuel survol icône */
 .display-card:hover .vault-key-icon {
     transform: rotate(15deg) scale(1.1);
-    filter: drop-shadow(0 0 10px rgba(255,105,180,0.8));
-}
-
-/* Titre (nom de l'entrée ou utilisateur) */
-.display-card-header h3 {
-    color: orange;
-    font-size: 1.2rem;
-    font-weight: 600;
-    text-shadow: 0 0 5px rgba(255,165,0,0.4);
-    margin: 0;
+    filter: drop-shadow(0 0 10px rgba(255, 105, 180, 0.8));
 }
 
 /* Informations */
@@ -56,7 +43,7 @@
     border-radius: 8px;
     padding: 0.8rem 1rem;
     border: 1px solid #333;
-    box-shadow: inset 0 0 5px rgba(255,105,180,0.2);
+    box-shadow: inset 0 0 5px rgba(255, 105, 180, 0.2);
 }
 
 .display-info p {
@@ -68,7 +55,6 @@
     color: pink;
 }
 
-/* Bouton d'action */
 .display-actions {
     display: flex;
     justify-content: flex-end;
@@ -83,31 +69,17 @@
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s ease;
-    box-shadow: 0 0 10px rgba(255,105,180,0.3);
+    box-shadow: 0 0 10px rgba(255, 105, 180, 0.3);
 }
 
-/* Effet hover bouton */
 .consult-btn:hover {
     transform: scale(1.05);
-    box-shadow: 0 0 20px rgba(255,105,180,0.6);
+    box-shadow: 0 0 20px rgba(255, 105, 180, 0.6);
 }
 
-/* Responsive */
-@media (max-width: 600px) {
-    .display-card {
-        max-width: 95%;
-        padding: 1rem;
-    }
-
-    .display-card-header h3 {
-        font-size: 1rem;
-    }
-
-    .consult-btn {
-        width: 100%;
-        text-align: center;
-    }
-}
+/* =========================
+   Modal / Détails entrée
+========================= */
 
 .modal-layout {
     position: fixed;
@@ -115,7 +87,7 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    background-color: rgba(0,0,0,0.6); /* semi-transparent */
+    background-color: rgba(0, 0, 0, 0.6); /* semi-transparent */
     z-index: 1000;
 }
 
@@ -147,7 +119,7 @@
 }
 
 /* ----- Libellés et contenus ----- */
-.entry-details p {
+.entry-details p, .pwd-row {
     font-size: 1.1rem;
     line-height: 1.5;
     background-color: #1a1a1a;
@@ -157,14 +129,13 @@
     box-shadow: inset 0 0 5px rgba(255, 105, 180, 0.2);
 }
 
-/* Les labels (fort) sont mis en valeur */
 .entry-details strong {
     color: #ff69b4;
     font-weight: 600;
 }
 
 /* ----- Animation légère au survol ----- */
-.entry-details p:hover {
+.entry-details p:hover, .pwd-row:hover {
     transform: scale(1.02);
     background: linear-gradient(to right, #222, #1a1a1a);
     box-shadow: 0 0 10px rgba(255, 105, 180, 0.4);
@@ -191,8 +162,47 @@
     box-shadow: 0 0 15px rgba(255, 165, 0, 0.7);
 }
 
-/* ----- Responsive ----- */
+/* Ligne mot de passe + bouton */
+.pwd-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.75rem;
+    align-items: center;
+}
+
+.copy-btn {
+    border: 1px solid #444;
+    background: #222;
+    color: #fff;
+    padding: 0.4rem 0.8rem;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.copy-btn:hover {
+    filter: brightness(1.15);
+}
+
+.error-text {
+    color: #ff5c5c;
+    margin-top: 0.5rem;
+}
+
+/* =========================
+   Responsive
+========================= */
+
 @media (max-width: 600px) {
+    .display-card {
+        max-width: 95%;
+        padding: 1rem;
+    }
+
+    .consult-btn {
+        width: 100%;
+        text-align: center;
+    }
+
     .entry-details {
         width: 95%;
         padding: 1.5rem;
@@ -206,7 +216,3 @@
         font-size: 1rem;
     }
 }
-
-
-
-

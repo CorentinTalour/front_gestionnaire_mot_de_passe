@@ -2,7 +2,6 @@
 @inject HttpClient Http
 @inject NavigationManager Navigation
 @inject Microsoft.Identity.Abstractions.IDownstreamApi DownstreamApi
-@using System.Text.Json
 @using front_gestionnaire_mot_de_passe.Components.Displayer
 @using front_gestionnaire_mot_de_passe.Components.CreateVaultEntryModal
 @using front_gestionnaire_mot_de_passe.Models
@@ -15,47 +14,45 @@
 @* { *@
 @*     <p>Il n'y a aucun mot de passe d'enregistrer dans ce coffre...</p> *@
 @* } *@
-else
-{
-    <section class="menu_vault">
-        <div class="menu_vault_top">
-            <button type="button" class="menu_button_create" @onclick="ShowModal">+</button>            
-            <CreateVaultEntryModal IsVisible="@_isModalVisible"
-                                   VaultId="@id"
-                                   OnClose="HideModal"
-                                    />
-            
-            <button class="menu_button_share">Partager coffre-fort</button>
-        </div>
 
-        <h2 class="menu_title">Votre coffre fort </h2>
+<section class="menu_vault">
+    <div class="menu_vault_top">
+        <button type="button" class="menu_button_create" @onclick="ShowModal">+</button>
+        <CreateVaultEntryModal IsVisible="@_isModalVisible"
+                               VaultId="@id"
+                               OnClose="HideModal"
+        />
 
-        <div class="menu_vault_bottom">
-            <button class="menu_button_remove_user">Exclure utilisateur</button>
-            <button class="menu_button_delete_vault">Supprimer coffre-fort</button>
-        </div>
-    </section>
-    
-    <h3 class="vault_title">Liste des mots de passe</h3>
-    
-    <section class="display_entries_zone">
-        @if (_entries is null)
+        <button class="menu_button_share">Partager coffre-fort</button>
+    </div>
+
+    <h2 class="menu_title">Votre coffre fort </h2>
+
+    <div class="menu_vault_bottom">
+        <button class="menu_button_remove_user">Exclure utilisateur</button>
+        <button class="menu_button_delete_vault">Supprimer coffre-fort</button>
+    </div>
+</section>
+
+<h3 class="vault_title">Liste des mots de passe</h3>
+
+<section class="display_entries_zone">
+    @if (_entries is null)
+    {
+        <p>Chargement…</p>
+    }
+    else if (_entries.Count == 0)
+    {
+        <p>Aucune entrée.</p>
+    }
+    else
+    {
+        @foreach (var e in _entries)
         {
-            <p>Chargement…</p>
+            <Displayer Entry="e" VaultId="@id"/>
         }
-        else if (_entries.Count == 0)
-        {
-            <p>Aucune entrée.</p>
-        }
-        else
-        {
-            @foreach (var e in _entries)
-            {
-                <Displayer Entry="e" VaultId="@id" />
-            }
-        }
-    </section>
-}
+    }
+</section>
 
 @code {
     [Parameter] public int id { get; set; }
@@ -69,8 +66,9 @@ else
         _isModalVisible = true;
         Console.WriteLine("ShowModal called, IsVisible=true");
     }
+
     private void HideModal() => _isModalVisible = false;
-    
+
     protected override async Task OnInitializedAsync()
     {
         /*var json = await Http.GetStringAsync("data/vaults.json");
@@ -81,12 +79,12 @@ else
 
         VaultData = vaults?.FirstOrDefault(v => v.Id == id);
         */
-        
+
         _entries = await DownstreamApi.GetForUserAsync<List<VaultEntry>>(
             "DownstreamApi",
             o => o.RelativePath = $"/Entry/VaultId?vaultId={id}"
         ) ?? new();
-    
+
         StateHasChanged();
     }
 }
