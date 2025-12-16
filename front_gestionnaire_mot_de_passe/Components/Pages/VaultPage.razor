@@ -9,9 +9,11 @@
 @using front_gestionnaire_mot_de_passe.Services
 @inject front_gestionnaire_mot_de_passe.Interop.CryptoInterop Crypto
 @inject VaultState VaultState
+@using front_gestionnaire_mot_de_passe.Components.UpdateVaultModal
 @rendermode InteractiveServer
 
-<PageTitle>Détails du coffre</PageTitle>
+    <PageTitle>Détails du coffre</PageTitle>
+
 
     <section class="menu_vault">
         <div class="menu_vault_top">
@@ -28,12 +30,21 @@
 
         <div class="menu_vault_bottom">
             <button class="menu_button_remove_user">Exclure utilisateur</button>
+            <button class="menu_button_update_vault"
+                    @onclick="ShowUpdateVaultModal">
+                Modifier coffre
+            </button>
             <button type="button" class="menu_button_delete_vault" @onclick="ShowDeleteModal">Supprimer coffre-fort</button>
             
         </div>
     </section>
     
     <h3 class="vault_title">Liste des mots de passe</h3>
+
+    <UpdateVaultModal IsVisible="@_isUpdateVaultModalVisible"
+                      VaultId="@id"
+                      OnClose="HideUpdateVaultModal"
+                      OnUpdated="OnVaultUpdated" />
     
 <section class="display_entries_zone">
     @if (_entries is null)
@@ -53,9 +64,9 @@
     }
 </section>
 
-<DeleteVaultModal IsVisible="@_isDeleteModalVisible"
-                  OnClose="HideDeleteModal"
-                  OnConfirm="DeleteVault" />
+    <DeleteVaultModal IsVisible="@_isDeleteModalVisible"
+                      OnClose="HideDeleteModal"
+                      OnConfirm="DeleteVault" />
 
 @if (_isReopenModalVisible)
 {
@@ -74,12 +85,16 @@
     private bool _isDeleteModalVisible = false;
     private bool _isReopenModalVisible = false;
     private List<VaultEntry>? _entries;
+    private bool _isModalVisibleCreateVault = false;
+    private bool _isUpdateVaultModalVisible = false;
 
 
     private void ShowModal()
     {
         _isModalVisible = true;
+        Console.WriteLine("ShowModal called, IsVisible=true");
     }
+    
     
     private void HideModal() => _isModalVisible = false;
     
@@ -99,7 +114,7 @@
     
         StateHasChanged();
     }
-
+    
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
@@ -114,7 +129,7 @@
             }
         }
     }
-
+    
     private void OnReopenModalClose()
     {
         _isReopenModalVisible = false;
@@ -124,6 +139,7 @@
     private void ShowDeleteModal()
     {
         _isDeleteModalVisible = true;
+        Console.WriteLine("ShowModal called, IsVisible=true");
     }
 
     private void HideDeleteModal()
@@ -161,5 +177,10 @@
         {
             Console.WriteLine($"Erreur suppression coffre : {ex.Message}");
         }
+        
+        private Task OnVaultUpdated()
+        {
+            Console.WriteLine("Vault mis à jour");
+            return Task.CompletedTask;
+        }
     }
-}

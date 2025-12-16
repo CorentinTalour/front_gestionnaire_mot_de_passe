@@ -1,0 +1,81 @@
+@using front_gestionnaire_mot_de_passe.Components.PasswordStrengthMeter
+@using System.Text.Json
+@inject Interop.CryptoInterop Crypto
+
+@if (IsVisible)
+{
+    <div class="modal-backdrop" @onclick="CloseModal">
+        <div class="modal-content" @onclick:stopPropagation="true">
+            <h2>Modifier le coffre</h2>
+
+            
+            <div class="form-group">
+                <label>Nom du coffre :</label>
+                <input type="text"  />
+            </div>
+            
+            <div class="modal-actions">
+                <button @onclick="SubmitUpdateForm">Mettre à jour</button>
+                <button @onclick="CloseModal">Annuler</button>
+            </div>
+        </div>
+    </div>
+}
+
+
+@code{
+    [Parameter] public bool IsVisible { get; set; }
+    [Parameter] public int VaultId { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback OnUpdated { get; set; }
+    
+    private string _vaultName = string.Empty;
+    private string _vaultPassword = string.Empty;
+    private bool _showPassword = false;
+
+    private async Task CloseModal()
+    {
+        if (OnClose.HasDelegate)
+            await OnClose.InvokeAsync(null);
+    }
+    
+    private void TogglePasswordVisibility()
+    {
+        _showPassword = !_showPassword;
+    }
+    
+    private async Task SubmitUpdateForm()
+    {
+
+        try
+        {
+
+            JsonElement json = await Crypto.UpdateVaultFromModalAsync(600_000, "https://localhost:7115");
+            
+            int newId = 0;
+            if (json.TryGetProperty("vaultId", out var v)) newId = v.GetInt32();
+            else if (json.TryGetProperty("id", out var i)) newId = i.GetInt32();
+            
+            // Préviens le parent
+            if (newId != 0 && OnUpdated.HasDelegate)
+                await OnUpdated.InvokeAsync(newId);
+            
+            await CloseModal();
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine("Erreur création vault: " + ex.Message);
+        }
+    }
+    
+    protected override void OnParametersSet()
+    {
+        if (IsVisible)
+        {
+            _vaultName = string.Empty;
+            _vaultPassword = string.Empty;
+            _showPassword = false;
+        }
+    }
+
+}
