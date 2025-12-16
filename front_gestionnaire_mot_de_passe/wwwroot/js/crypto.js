@@ -431,6 +431,25 @@ export async function updateVaultFromModal(apiBase = "https://localhost:7115") {
 
 }
 
+export function generateSecurePassword(length) {
+    
+    const upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    const lower = "abcdefghijklmnopqrstuvwxyz";
+    const digits = "0123456789";
+    const special = "!@#$%^&*()-_=+[]{}<>?";
+    const all = upper + lower + digits + special;
+
+    const randomValues = new Uint8Array(length);
+    crypto.getRandomValues(randomValues);
+
+    let password = "";
+    for (let i = 0; i < length; i++) {
+        password += all[randomValues[i] % all.length];
+    }
+    
+    return password;
+}
+
 
 
 

@@ -73,4 +73,8 @@ public class CryptoInterop
     
     public async Task TogglePasswordVisibilityAsync(string elementId)
         => await (await Mod()).InvokeVoidAsync("togglePasswordVisibility", elementId);
+    
+    public async Task<string> GenerateSecurePasswordAsync(int length)
+        => await (await Mod()).InvokeAsync<string>(
+            "generateSecurePassword", length);
 }
