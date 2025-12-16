@@ -401,6 +401,76 @@ export async function createEntryFromModal(vaultId, apiBase = "https://localhost
 // ==============================
 // Modification “zéro mot de passe serveur” pour l'API
 // ==============================
+export async function updateEntryFromModal(vaultId, apiBase = "https://localhost:7115") {
+    // 1) Récupération des champs DOM
+    const userEl = document.getElementById("ce-username");
+    const pwdEl = document.getElementById("ce-password");
+    const urlEl = document.getElementById("ce-url");
+    const notesEl = document.getElementById("ce-notes");
+
+    if (!(userEl instanceof HTMLInputElement)) throw new Error("#ce-username introuvable");
+    if (!(pwdEl instanceof HTMLInputElement)) throw new Error("#ce-password introuvable");
+    if (!(urlEl instanceof HTMLInputElement)) throw new Error("#ce-url introuvable");
+    if (!(notesEl instanceof HTMLTextAreaElement)) throw new Error("#ce-notes introuvable");
+
+    const username = userEl.value ?? "";
+    const password = pwdEl.value ?? "";
+    const url = urlEl.value ?? "";
+    const notes = notesEl.value ?? "";
+
+    // 2) Vérifie que la clé de vault est bien en RAM
+    if (!currentVault?.key || currentVault.id == null) {
+        throw new Error("Vault non ouvert : clé AES introuvable côté client.");
+    }
+
+    // 3) Chiffrement côté client (AAD lie chaque champ au vault + type)
+    const ns = `vault:${vaultId}`;
+    const userNameCypherObj = await makeCypherObj(username, `${ns}|field:username`);
+    const passwordCypherObj = await makeCypherObj(password, `${ns}|field:password`);
+    const urlCypherObj = await makeCypherObj(url, `${ns}|field:url`);
+    const noteCypherObj = await makeCypherObj(notes, `${ns}|field:notes`);
+
+
+    const nomCypherObj = await makeCypherObj(username, `${ns}|field:name`);
+
+    // Payload conforme à PostEntryObj
+    const payload = {
+        vaultId,
+        userNameCypherObj,
+        passwordCypherObj,
+        urlCypherObj,
+        noteCypherObj,
+        nomCypherObj
+    };
+
+    // Appel API    
+    const res = await fetch(`${apiBase}/Entry`, {
+        method: "PUT",
+        headers: {"Content-Type": "application/json", ...authHeaders()},
+        body: JSON.stringify(payload)
+    });
+
+    if (!res.ok) {
+        const text = await res.text().catch(() => "");
+        throw new Error(`Erreur API Entry: ${res.status} ${text}`);
+    }
+
+    // Nettoyage UI
+    userEl.value = "";
+    pwdEl.value = "";
+    urlEl.value = "";
+    notesEl.value = "";
+
+    // touche le timer d’auto-lock
+    touchVault();
+
+    return true;
+}
+
+
+// ==============================
+// Modification “zéro mot de passe serveur” pour l'API
+// ==============================
 export async function updateVaultFromModal(apiBase = "https://localhost:7115") {
     const root = document.querySelector(".modal-content");
     if (!root) throw new Error("Modal introuvable (.modal-content)");
