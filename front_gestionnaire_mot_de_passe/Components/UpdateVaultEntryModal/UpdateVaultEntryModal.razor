@@ -67,7 +67,7 @@
     [Parameter] public bool IsVisible { get; set; }
     [Parameter] public EventCallback OnClose { get; set; }
     [Parameter] public EventCallback OnCreated { get; set; }
-    [Parameter] public int VaultId { get; set; }
+    [Parameter] public int EntryId { get; set; }
     private string _password = "";
     private bool _tokenPushed;
     private string? _error;
@@ -95,11 +95,11 @@
     {
         _error = null;
 
-        if (VaultId <= 0) { _error = "VaultId manquant."; return; }
+        if (EntryId <= 0) { _error = "VaultId manquant."; return; }
 
         try
         {
-            var ok = await Crypto.UpdateEntryFromModalAsync(VaultId, "https://localhost:7115");
+            var ok = await Crypto.UpdateEntryFromModalAsync(EntryId, "https://localhost:7115");
             if (ok)
             {
                 if (OnCreated.HasDelegate) await OnCreated.InvokeAsync();

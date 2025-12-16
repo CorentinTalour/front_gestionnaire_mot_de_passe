@@ -401,7 +401,7 @@ export async function createEntryFromModal(vaultId, apiBase = "https://localhost
 // ==============================
 // Modification “zéro mot de passe serveur” pour l'API
 // ==============================
-export async function updateEntryFromModal(vaultId, apiBase = "https://localhost:7115") {
+export async function updateEntryFromModal(EntryId, apiBase = "https://localhost:7115") {
     // 1) Récupération des champs DOM
     const userEl = document.getElementById("ce-username");
     const pwdEl = document.getElementById("ce-password");
@@ -424,7 +424,7 @@ export async function updateEntryFromModal(vaultId, apiBase = "https://localhost
     }
 
     // 3) Chiffrement côté client (AAD lie chaque champ au vault + type)
-    const ns = `vault:${vaultId}`;
+    const ns = `vault:${currentVault.id}|entry:${EntryId}`;
     const userNameCypherObj = await makeCypherObj(username, `${ns}|field:username`);
     const passwordCypherObj = await makeCypherObj(password, `${ns}|field:password`);
     const urlCypherObj = await makeCypherObj(url, `${ns}|field:url`);
@@ -435,7 +435,7 @@ export async function updateEntryFromModal(vaultId, apiBase = "https://localhost
 
     // Payload conforme à PostEntryObj
     const payload = {
-        vaultId,
+        EntryId,
         userNameCypherObj,
         passwordCypherObj,
         urlCypherObj,

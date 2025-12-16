@@ -55,8 +55,8 @@ public class CryptoInterop
     public async Task<bool> CreateEntryFromModalAsync(int vaultId, string apiBase)
         => await (await Mod()).InvokeAsync<bool>("createEntryFromModal", vaultId, apiBase);
     
-    public async Task<bool> UpdateEntryFromModalAsync(int vaultId, string apiBase)
-        => await (await Mod()).InvokeAsync<bool>("updateEntryFromModal", vaultId, apiBase);
+    public async Task<bool> UpdateEntryFromModalAsync(int entryId, string apiBase)
+        => await (await Mod()).InvokeAsync<bool>("updateEntryFromModal", entryId, apiBase);
     
     public async Task<System.Text.Json.JsonElement> VerifyVaultPasswordServerAsync(
         int? vaultId, string password, string apiBase = "https://localhost:7115") =>
