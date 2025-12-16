@@ -18,7 +18,7 @@ public class CryptoInterop
 
     private async Task<IJSObjectReference> Mod()
     {
-        var url = new Uri(new Uri(_nav.BaseUri), "js/crypto.js?v=20").ToString();
+        var url = new Uri(new Uri(_nav.BaseUri), "js/crypto.js?v=21").ToString();
         return _mod ??= await _js.InvokeAsync<IJSObjectReference>("import", url);
     }
     
@@ -54,6 +54,9 @@ public class CryptoInterop
     
     public async Task<bool> CreateEntryFromModalAsync(int vaultId, string apiBase)
         => await (await Mod()).InvokeAsync<bool>("createEntryFromModal", vaultId, apiBase);
+    
+    public async Task<bool> UpdateEntryFromModalAsync(int vaultId, string apiBase)
+        => await (await Mod()).InvokeAsync<bool>("updateEntryFromModal", vaultId, apiBase);
     
     public async Task<System.Text.Json.JsonElement> VerifyVaultPasswordServerAsync(
         int? vaultId, string password, string apiBase = "https://localhost:7115") =>

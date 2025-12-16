@@ -2,6 +2,7 @@
 @rendermode InteractiveServer
 @inject front_gestionnaire_mot_de_passe.Interop.CryptoInterop Crypto
 @inject Microsoft.Identity.Abstractions.IDownstreamApi DownstreamApi
+@using front_gestionnaire_mot_de_passe.Components.UpdateVaultEntryModal
 
 <div class="display-card">
     <div class="display-card-header">
@@ -9,6 +10,10 @@
         <div class="display-info">
             <p><strong>Entrée #@Entry.Id</strong></p>
         </div>
+    </div>
+    
+    <div class="display-actions">
+        <button class="consult-btn" type="button" @onclick="ShowUpdateModal">Modifier</button>
     </div>
 
     <div class="display-actions">
@@ -24,8 +29,9 @@
                 <button class="entry-back-button" type="button" @onclick="CloseModal">
                     ← Retour au coffre
                 </button>
+                
                 <button class="entry-back-button" type="button" @onclick="DeleteVaultEntry">
-                    Supprimer cette ligne
+                    Supprimer l'élément
                 </button>
             </div>
 
@@ -70,7 +76,11 @@
             </div>
         </section>
     </div>
+    
 }
+<UpdateVaultEntryModal IsVisible="@_isUpdateModalVisible"
+                       VaultId="@VaultId"
+                       OnClose="HideUpdateModal" />
 
 @code {
     [Parameter, EditorRequired] public VaultEntry Entry { get; set; } = default!;
@@ -79,6 +89,7 @@
     private bool _showModal;
     private bool _needDecrypt;
     private string? _error;
+    private bool _isUpdateModalVisible;
 
     private readonly string _uid = Guid.NewGuid().ToString("N");
     private string DomId(string field) => $"entry-{Entry.Id}-{_uid}-{field}";
@@ -88,6 +99,17 @@
         _error = null;
         _showModal = true;
         _needDecrypt = true;
+        await InvokeAsync(StateHasChanged);
+    }
+    
+    private void ShowUpdateModal()
+    {
+        _isUpdateModalVisible = true;
+    }
+    
+    private async Task HideUpdateModal()
+    {
+        _isUpdateModalVisible = false;
         await InvokeAsync(StateHasChanged);
     }
 
