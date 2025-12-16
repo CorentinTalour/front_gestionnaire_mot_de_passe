@@ -27,6 +27,9 @@ public class CryptoInterop
     
     public async Task<JsonElement> CreateVaultFromModalAsync(int iterations = 600_000, string apiBase = "https://localhost:7115") =>
         await (await Mod()).InvokeAsync<JsonElement>("createVaultFromModal", iterations, apiBase);
+    
+    public async Task<JsonElement> UpdateVaultFromModalAsync(int iterations = 600_000, string apiBase = "https://localhost:7115") =>
+        await (await Mod()).InvokeAsync<JsonElement>("updateVaultFromModal");
 
     public async Task<object> OpenVaultFromInputAsync(int vaultId, string inputId, int autoLockMs = 300_000)
         => await (await Mod()).InvokeAsync<object>("openVaultFromInput", vaultId, inputId, autoLockMs);

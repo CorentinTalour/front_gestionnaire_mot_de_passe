@@ -392,7 +392,44 @@ export async function createEntryFromModal(vaultId, apiBase = "https://localhost
 }
 
 
+// ==============================
+// Modification “zéro mot de passe serveur” pour l'API
+// ==============================
+export async function updateVaultFromModal(apiBase = "https://localhost:7115") {
+    const root = document.querySelector(".modal-content");
+    if (!root) throw new Error("Modal introuvable (.modal-content)");
 
+    const vaultNameEl = root.querySelector('input[type="text"]');
+    const name = (vaultNameEl?.value ?? "").trim();
+
+    let res;
+    try {
+        res = await fetch(`${apiBase}/Vault`, {
+            method: "PUT",
+            headers: {"Content-Type": "application/json", ...authHeaders()},
+            body: JSON.stringify({
+                name,
+            })
+        });
+    } catch (e) {
+        console.error("Fetch network error:", e);
+        throw e;
+    }
+
+    if (!res.ok) {
+        const text = await res.text().catch(() => "");
+        console.error("Fetch HTTP error:", res.status, res.statusText, text);
+        throw new Error(`Création du vault échouée: ${res.status} ${res.statusText}`);
+    }
+
+    const json = await res.json();
+
+    // Vide les champs
+    if (vaultNameEl) vaultNameEl.value = "";
+
+    return json;
+
+}
 
 
 
