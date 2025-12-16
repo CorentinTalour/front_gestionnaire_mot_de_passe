@@ -95,9 +95,18 @@
         Console.WriteLine("ShowModal called, IsVisible=true");
     }
     
-    
     private void HideModal() => _isModalVisible = false;
     
+    private void ShowUpdateVaultModal()
+    {
+        _isUpdateVaultModalVisible = true;
+    }
+    
+    private void HideUpdateVaultModal()
+    {
+        _isUpdateVaultModalVisible = false;
+    }
+
     protected override async Task OnInitializedAsync()
     {
         var vaults = await DownstreamApi.GetForUserAsync<List<Vault>>(
@@ -106,15 +115,15 @@
         ) ?? new();
 
         VaultData = vaults.FirstOrDefault(v => v.Id == id);
-        
+
         _entries = await DownstreamApi.GetForUserAsync<List<VaultEntry>>(
             "DownstreamApi",
             o => o.RelativePath = $"/Entry/VaultId?vaultId={id}"
         ) ?? new();
-    
+
         StateHasChanged();
     }
-    
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
@@ -129,13 +138,13 @@
             }
         }
     }
-    
+
     private void OnReopenModalClose()
     {
         _isReopenModalVisible = false;
         StateHasChanged();
     }
-    
+
     private void ShowDeleteModal()
     {
         _isDeleteModalVisible = true;
@@ -146,7 +155,7 @@
     {
         _isDeleteModalVisible = false;
     }
-    
+
     private async Task ReloadEntriesAsync()
     {
         _entries = await DownstreamApi.GetForUserAsync<List<VaultEntry>>(
@@ -156,7 +165,7 @@
 
         StateHasChanged();
     }
-    
+
     private async Task DeleteVault()
     {
         try
@@ -168,19 +177,20 @@
                     options.HttpMethod = HttpMethod.Delete.ToString();
                     options.RelativePath = $"/Vault/{id}";
                 });
-            
+
             _isDeleteModalVisible = false;
-            
+
             Navigation.NavigateTo("/");
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Erreur suppression coffre : {ex.Message}");
         }
-        
-        private Task OnVaultUpdated()
-        {
-            Console.WriteLine("Vault mis à jour");
-            return Task.CompletedTask;
-        }
     }
+    
+    private Task OnVaultUpdated()
+    {
+        Console.WriteLine("Vault mis à jour");
+        return Task.CompletedTask;
+    }
+}
