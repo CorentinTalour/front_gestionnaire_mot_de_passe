@@ -8,7 +8,7 @@
     margin: 2rem auto;
     box-shadow: 0 0 15px rgba(255,105,180,0.3);
     display: flex;
-    justify-content: space-around;
+    justify-content: space-between;
     align-items: center;
     gap: 1.5rem;
     border: 1px solid #222;
@@ -19,7 +19,6 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 1rem;
 }
 
 .menu_vault .menu_title {
@@ -88,7 +87,7 @@
     background-color: #222;
 }
 
-.menu_button_remove_user {
+.menu_button_remove_user .menu_button_update_vault {
     background: linear-gradient(#222, #222) padding-box,
     linear-gradient(to right, #ff4500, #ff1493) border-box;
     border: 2px solid transparent;

@@ -1,0 +1,122 @@
+/* Fond sombre */
+.modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.65);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+/* Contenu de la modale */
+.modal-content {
+    background-color: #111;
+    color: #fff;
+    padding: 2rem;
+    border-radius: 12px;
+    width: 420px;
+    max-width: 90%;
+    box-shadow: 0 0 20px rgba(255, 105, 180, 0.35);
+    animation: fadeIn 0.25s ease-in-out;
+}
+
+/* Titre */
+.modal-content h2 {
+    margin-top: 0;
+    margin-bottom: 1.5rem;
+    text-align: center;
+    color: orange;
+}
+
+/* Champs */
+.form-group {
+    margin-bottom: 1.2rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.4rem;
+    font-size: 0.9rem;
+    color: pink;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 0.6rem 0.7rem;
+    border-radius: 8px;
+    border: 1px solid #333;
+    background-color: #222;
+    color: #fff;
+    font-size: 0.95rem;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: orange;
+    box-shadow: 0 0 5px rgba(255,165,0,0.4);
+}
+
+/* Champ mot de passe + bouton œil */
+.form-group.password-group {
+    position: relative;
+}
+
+.show_password_button {
+    position: absolute;
+    right: 10px;
+    top: 32px;
+    background: transparent;
+    border: none;
+    color: #fff;
+    cursor: pointer;
+    font-size: 1.1rem;
+}
+
+.show_password_button:hover {
+    color: orange;
+}
+
+/* Actions */
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 1.5rem;
+}
+
+.modal-actions button {
+    padding: 0.55rem 1.2rem;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    cursor: pointer;
+}
+
+/* Bouton principal */
+.modal-actions button:first-child {
+    background: linear-gradient(135deg, orange, hotpink);
+    color: #fff;
+}
+
+/* Bouton annuler */
+.modal-actions button:last-child {
+    background-color: #333;
+    color: #fff;
+}
+
+.modal-actions button:last-child:hover {
+    background-color: #444;
+}
+
+/* Animation */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}

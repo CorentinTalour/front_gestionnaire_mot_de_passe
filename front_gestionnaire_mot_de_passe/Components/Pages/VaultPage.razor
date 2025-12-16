@@ -7,15 +7,11 @@
 @using front_gestionnaire_mot_de_passe.Components.CreateVaultEntryModal
 @using front_gestionnaire_mot_de_passe.Models
 @using front_gestionnaire_mot_de_passe.Components.DeleteVaultModal
+@using front_gestionnaire_mot_de_passe.Components.UpdateVaultModal
 @rendermode InteractiveServer
 
-<PageTitle>Détails du coffre</PageTitle>
+    <PageTitle>Détails du coffre</PageTitle>
 
-
-@* @if (VaultData is null) *@
-@* { *@
-@*     <p>Il n'y a aucun mot de passe d'enregistrer dans ce coffre...</p> *@
-@* } *@
 
     <section class="menu_vault">
         <div class="menu_vault_top">
@@ -32,102 +28,128 @@
 
         <div class="menu_vault_bottom">
             <button class="menu_button_remove_user">Exclure utilisateur</button>
+            <button class="menu_button_update_vault"
+                    @onclick="ShowUpdateVaultModal">
+                Modifier coffre
+            </button>
             <button type="button" class="menu_button_delete_vault" @onclick="ShowDeleteModal">Supprimer coffre-fort</button>
             
         </div>
     </section>
     
     <h3 class="vault_title">Liste des mots de passe</h3>
+
+    <UpdateVaultModal IsVisible="@_isUpdateVaultModalVisible"
+                      VaultId="@id"
+                      OnClose="HideUpdateVaultModal"
+                      OnUpdated="OnVaultUpdated" />
     
-<section class="display_entries_zone">
-    @if (_entries is null)
-    {
-        <p>Chargement…</p>
-    }
-    else if (_entries.Count == 0)
-    {
-        <p>Aucune entrée.</p>
-    }
-    else
-    {
-        @foreach (var e in _entries)
+    <section class="display_entries_zone">
+        @if (_entries is null)
         {
-            <Displayer Entry="e" VaultId="@id" />
+            <p>Chargement…</p>
         }
-    }
-</section>
-
-<DeleteVaultModal IsVisible="@_isDeleteModalVisible"
-                  OnClose="HideDeleteModal"
-                  OnConfirm="DeleteVault" />
-
-
-@code {
-    [Parameter] public int id { get; set; }
-    public Vault? VaultData { get; set; }
-    private bool _isModalVisible = false;
-    private bool _isDeleteModalVisible = false;
-    private List<VaultEntry>? _entries;
-
-
-    private void ShowModal()
-    {
-        _isModalVisible = true;
-        Console.WriteLine("ShowModal called, IsVisible=true");
-    }
-    
-    
-    private void HideModal() => _isModalVisible = false;
-    
-    protected override async Task OnInitializedAsync()
-    {
-        /*var json = await Http.GetStringAsync("data/vaults.json");
-        var vaults = JsonSerializer.Deserialize<List<Vault>>(json, new JsonSerializerOptions
+        else if (_entries.Count == 0)
         {
-            PropertyNameCaseInsensitive = true
-        });
+            <p>Aucune entrée.</p>
+        }
+        else
+        {
+            @foreach (var e in _entries)
+            {
+                <Displayer Entry="e" VaultId="@id" />
+            }
+        }
+    </section>
 
-        VaultData = vaults?.FirstOrDefault(v => v.Id == id);
-        */
+    <DeleteVaultModal IsVisible="@_isDeleteModalVisible"
+                      OnClose="HideDeleteModal"
+                      OnConfirm="DeleteVault" />
+
+    @code {
+        [Parameter] public int id { get; set; }
+        public Vault? VaultData { get; set; }
+        private bool _isModalVisible = false;
+        private bool _isDeleteModalVisible = false;
+        private List<VaultEntry>? _entries;
+        private bool _isModalVisibleCreateVault = false;
+        private bool _isUpdateVaultModalVisible = false;
+
+
+        private void ShowModal()
+        {
+            _isModalVisible = true;
+            Console.WriteLine("ShowModal called, IsVisible=true");
+        }
         
-        _entries = await DownstreamApi.GetForUserAsync<List<VaultEntry>>(
-            "DownstreamApi",
-            o => o.RelativePath = $"/Entry/VaultId?vaultId={id}"
-        ) ?? new();
-    
-        StateHasChanged();
-    }
-    
-    private void ShowDeleteModal()
-    {
-        _isDeleteModalVisible = true;
-        Console.WriteLine("ShowModal called, IsVisible=true");
-    }
+        
+        private void HideModal() => _isModalVisible = false;
+        
+        private void ShowUpdateVaultModal()
+        {
+            _isUpdateVaultModalVisible = true;
+        }
 
-    private void HideDeleteModal()
-    {
-        _isDeleteModalVisible = false;
-    }
-    
-    private async Task DeleteVault()
-    {
-        try
+        private void HideUpdateVaultModal()
         {
-            await DownstreamApi.CallApiForUserAsync(
+            _isUpdateVaultModalVisible = false;
+        }
+        
+        protected override async Task OnInitializedAsync()
+        {
+            /*var json = await Http.GetStringAsync("data/vaults.json");
+            var vaults = JsonSerializer.Deserialize<List<Vault>>(json, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
+
+            VaultData = vaults?.FirstOrDefault(v => v.Id == id);
+            */
+            
+            _entries = await DownstreamApi.GetForUserAsync<List<VaultEntry>>(
                 "DownstreamApi",
-                options =>
-                {
-                    options.HttpMethod = HttpMethod.Delete.ToString();
-                    options.RelativePath = $"/Vault/{id}";
-                });
-            
-            _isDeleteModalVisible = false;
-            
-            Navigation.NavigateTo("/");
+                o => o.RelativePath = $"/Entry/VaultId?vaultId={id}"
+            ) ?? new();
+        
+            StateHasChanged();
         }
-        catch (Exception ex)
+        
+        private void ShowDeleteModal()
         {
-            Console.WriteLine($"Erreur suppression coffre : {ex.Message}");
+            _isDeleteModalVisible = true;
+            Console.WriteLine("ShowModal called, IsVisible=true");
+        }
+
+        private void HideDeleteModal()
+        {
+            _isDeleteModalVisible = false;
+        }
+        
+        private async Task DeleteVault()
+        {
+            try
+            {
+                await DownstreamApi.CallApiForUserAsync(
+                    "DownstreamApi",
+                    options =>
+                    {
+                        options.HttpMethod = HttpMethod.Delete.ToString();
+                        options.RelativePath = $"/Vault/{id}";
+                    });
+                
+                _isDeleteModalVisible = false;
+                
+                Navigation.NavigateTo("/");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Erreur suppression coffre : {ex.Message}");
+            }
+        }
+        
+        private Task OnVaultUpdated()
+        {
+            Console.WriteLine("Vault mis à jour");
+            return Task.CompletedTask;
         }
     }
-}
