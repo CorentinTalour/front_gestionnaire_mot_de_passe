@@ -19,7 +19,7 @@
             <CreateVaultEntryModal IsVisible="@_isModalVisible"
                                    VaultId="@id"
                                    OnClose="HideModal"
-                                    />
+                                   OnCreated="ReloadEntriesAsync" />
             
             <button class="menu_button_share">Partager coffre-fort</button>
         </div>
@@ -48,7 +48,7 @@
     {
         @foreach (var e in _entries)
         {
-            <Displayer Entry="e" VaultId="@id" />
+            <Displayer Entry="e" VaultId="@id" OnDeleted="ReloadEntriesAsync"/>
         }
     }
 </section>
@@ -80,7 +80,6 @@
     {
         _isModalVisible = true;
     }
-    
     
     private void HideModal() => _isModalVisible = false;
     
@@ -130,6 +129,16 @@
     private void HideDeleteModal()
     {
         _isDeleteModalVisible = false;
+    }
+    
+    private async Task ReloadEntriesAsync()
+    {
+        _entries = await DownstreamApi.GetForUserAsync<List<VaultEntry>>(
+            "DownstreamApi",
+            o => o.RelativePath = $"/Entry/VaultId?vaultId={id}"
+        ) ?? new();
+
+        StateHasChanged();
     }
     
     private async Task DeleteVault()

@@ -75,6 +75,7 @@
 @code {
     [Parameter, EditorRequired] public VaultEntry Entry { get; set; } = default!;
     [Parameter] public int VaultId { get; set; }
+    [Parameter] public EventCallback OnDeleted { get; set; }
 
     private bool _showModal;
     private bool _needDecrypt;
@@ -170,6 +171,9 @@
                     options.HttpMethod = HttpMethod.Delete.Method;
                     options.RelativePath = $"/Entry?entryId={Entry.Id}";
                 });
+            
+            if (OnDeleted.HasDelegate)
+                await OnDeleted.InvokeAsync(); 
 
             if (!res.IsSuccessStatusCode)
             {
