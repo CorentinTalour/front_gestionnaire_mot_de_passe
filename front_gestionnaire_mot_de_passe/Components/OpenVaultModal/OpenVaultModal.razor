@@ -9,14 +9,19 @@
     <div class="modal-backdrop" @onclick="CloseModal">
         <div class="modal-content" @onclick:stopPropagation="true">
             <h2>Veuillez saisir le mot de passe maître</h2>
+
             <div class="form-group">
                 <label>Mot de passe maître</label>
-                <input type="password" @bind="_vaultPassword" />
+                <input id="vault-master-pwd"
+                       type="password"
+                       autocomplete="current-password" />
             </div>
+
             <div class="modal-actions">
-                <button @onclick="SubmitForm">Ouvrir</button>
-                <button @onclick="CloseModal">Annuler</button>
+                <button type="button" @onclick="SubmitForm">Ouvrir</button>
+                <button type="button" @onclick="CloseModal">Annuler</button>
             </div>
+
             @if (!string.IsNullOrEmpty(_errorMessage))
             {
                 <p style="color:red;">@_errorMessage</p>
@@ -64,25 +69,25 @@
         _errorMessage = null;
 
         if (VaultId <= 0) { _errorMessage = "VaultId manquant."; return; }
-        if (string.IsNullOrWhiteSpace(_vaultPassword)) { _errorMessage = "Veuillez saisir le mot de passe maître."; return; }
         if (string.IsNullOrWhiteSpace(VaultSalt) || VaultIterations <= 0) { _errorMessage = "Paramètres du coffre (salt/iterations) manquants."; return; }
 
         try
         {
-            // 1) Vérification côté serveur (ne modifie pas currentVault)
-            var check = await Crypto.VerifyVaultPasswordServerAsync(VaultId, _vaultPassword, "https://localhost:7115");
-            var ok = check.TryGetProperty("ok", out var okProp) && okProp.GetBoolean();
+            var ok = await Crypto.OpenVaultFromModalAsync(
+                VaultId.Value,
+                // ID du champ input dans le modal
+                "vault-master-pwd",
+                VaultSalt!,
+                VaultIterations!.Value,
+                "https://localhost:7115"
+            );
+
             if (!ok)
             {
                 _errorMessage = "Mot de passe incorrect.";
-                StateHasChanged();
                 return;
             }
 
-            // 2) Armement local de la clé (PBKDF2 -> AES-GCM) avec salt + iterations
-            await Crypto.ArmVaultSessionAsync(VaultId, _vaultPassword, VaultSalt, VaultIterations);
-
-            // (hygiène) on ferme et on navigue
             await CloseModal();
             Nav.NavigateTo($"/VaultPage/{VaultId}");
         }

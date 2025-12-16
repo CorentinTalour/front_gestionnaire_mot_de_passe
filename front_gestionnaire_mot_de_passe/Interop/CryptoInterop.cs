@@ -18,7 +18,7 @@ public class CryptoInterop
 
     private async Task<IJSObjectReference> Mod()
     {
-        var url = new Uri(new Uri(_nav.BaseUri), "js/crypto.js?v=20").ToString();
+        var url = new Uri(new Uri(_nav.BaseUri), "js/crypto.js?v=21").ToString();
         return _mod ??= await _js.InvokeAsync<IJSObjectReference>("import", url);
     }
     
@@ -73,4 +73,14 @@ public class CryptoInterop
 
     public async Task<bool> IsVaultOpenAsync(int vaultId)
         => await (await Mod()).InvokeAsync<bool>("isVaultOpen", vaultId);
+    
+    public async Task<bool> OpenVaultFromModalAsync(
+        int vaultId,
+        string inputId,
+        string vaultSaltB64,
+        int iterations,
+        string apiBase = "https://localhost:7115")
+        => await (await Mod()).InvokeAsync<bool>(
+            "openVaultFromModal",
+            vaultId, inputId, vaultSaltB64, iterations, apiBase);
 }

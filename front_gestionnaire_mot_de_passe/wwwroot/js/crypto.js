@@ -492,3 +492,25 @@ export async function copyDomTextToClipboard(elementId) {
     await navigator.clipboard.writeText(textToCopy);
     touchVault();
 }
+
+export async function openVaultFromModal(vaultId, inputId, vaultSaltB64, iterations, apiBase = "https://localhost:7115") {
+    const el = document.getElementById(inputId);
+    if (!(el instanceof HTMLInputElement)) throw new Error("Input mot de passe introuvable");
+
+    const password = el.value ?? "";
+    if (!password) return false;
+
+    // 1) vérif serveur (avec mot de passe clair, mais depuis le navigateur)
+    const check = await verifyVaultPasswordServer(vaultId, password, apiBase);
+    if (!check.ok) {
+        el.value = "";
+        return false;
+    }
+
+    // 2) dérive et garde la clé AES en RAM JS
+    await armVaultSession(vaultId, password, vaultSaltB64, iterations);
+
+    // 3) hygiène
+    el.value = "";
+    return true;
+}
