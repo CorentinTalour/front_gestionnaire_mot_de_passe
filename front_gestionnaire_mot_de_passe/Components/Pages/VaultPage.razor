@@ -6,7 +6,9 @@
 @using front_gestionnaire_mot_de_passe.Models
 @using front_gestionnaire_mot_de_passe.Components.DeleteVaultModal
 @using front_gestionnaire_mot_de_passe.Components.OpenVaultModal
+@using front_gestionnaire_mot_de_passe.Services
 @inject front_gestionnaire_mot_de_passe.Interop.CryptoInterop Crypto
+@inject VaultState VaultState
 @rendermode InteractiveServer
 
 <PageTitle>Détails du coffre</PageTitle>
@@ -55,11 +57,15 @@
                   OnClose="HideDeleteModal"
                   OnConfirm="DeleteVault" />
 
-<OpenVaultModal IsVisible="@_isReopenModalVisible"
-                VaultId="@id"
-                VaultSalt="@VaultData?.Salt"
-                VaultIterations="@VaultData?.NbIteration"
-                OnClose="OnReopenModalClose" />
+@if (_isReopenModalVisible)
+{
+    <OpenVaultModal IsVisible="true"
+                    VaultId="@id"
+                    VaultData="@VaultData"
+                    VaultSalt="@VaultData?.Salt"
+                    VaultIterations="@VaultData?.NbIteration"
+                    OnClose="OnReopenModalClose" />
+}
 
 @code {
     [Parameter] public int id { get; set; }
@@ -80,17 +86,12 @@
     
     protected override async Task OnInitializedAsync()
     {
-        try 
-        {
-            VaultData = await DownstreamApi.GetForUserAsync<Vault>(
-                "DownstreamApi",
-                o => o.RelativePath = $"/Vault/{id}"
-            );
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Erreur chargement vault: {ex.Message}");
-        }
+        var vaults = await DownstreamApi.GetForUserAsync<List<Vault>>(
+            "DownstreamApi",
+            o => o.RelativePath = "/Vault/All"
+        ) ?? new();
+
+        VaultData = vaults.FirstOrDefault(v => v.Id == id);
         
         _entries = await DownstreamApi.GetForUserAsync<List<VaultEntry>>(
             "DownstreamApi",
@@ -153,4 +154,3 @@
         }
     }
 }
-

@@ -1,7 +1,10 @@
+@using front_gestionnaire_mot_de_passe.Models
+@using front_gestionnaire_mot_de_passe.Services
 @using Microsoft.AspNetCore.Authorization
 @inject Microsoft.Identity.Web.ITokenAcquisition TokenAcquisition
 @inject Interop.CryptoInterop Crypto
 @inject NavigationManager Nav
+@inject VaultState VaultState
 @attribute [Authorize]
 
 @if (IsVisible)
@@ -36,6 +39,8 @@
     [Parameter] public int? VaultId { get; set; }
     [Parameter] public string? VaultSalt { get; set; } = "";
     [Parameter] public int? VaultIterations { get; set; }
+    [Parameter, EditorRequired]
+    public Vault VaultData { get; set; } = default!;
 
     private string _vaultPassword = string.Empty;
     private string? _errorMessage;
@@ -89,6 +94,8 @@
             }
 
             await CloseModal();
+            
+            VaultState.Set(VaultData);
             Nav.NavigateTo($"/VaultPage/{VaultId}");
         }
         catch (Exception ex)

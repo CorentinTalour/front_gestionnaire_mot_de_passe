@@ -4,26 +4,20 @@
 
 
 <div class="vault-card">
-    
     <div class="vault-card-header">
-        
         <img src="cle_icon.jpg" alt="Icône de clé" class="vault-key-icon"/>
         <h3>@VaultData?.Name</h3>
-        
     </div>
 
     <div class="vault-info">
-        
         <p><strong>Créé le :</strong> @(VaultData != null ? VaultData.CreatedAt.ToString("dd/MM/yyyy HH:mm") : "")</p>
         <p><strong>Par :</strong> "Utilisateur inconnu")</p>
         <p><strong>Modifié le :</strong> @(VaultData?.UpdatedAt.HasValue == true ? VaultData.UpdatedAt.Value.ToString("dd/MM/yyyy HH:mm") : "Jamais")</p>
-
     </div>
 
     <div class="vault-actions">
         <button class="consult-btn" @onclick="() => OnOpenVault.InvokeAsync(VaultData)">Consulter</button>
     </div>
-    
 </div>
 
 @code {

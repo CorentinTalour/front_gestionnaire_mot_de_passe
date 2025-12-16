@@ -1,6 +1,7 @@
 using front_gestionnaire_mot_de_passe.Components;
 using front_gestionnaire_mot_de_passe.Components.Pages;
 using front_gestionnaire_mot_de_passe.Interop;
+using front_gestionnaire_mot_de_passe.Services;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.Identity.Web;
 using Microsoft.Identity.Web.UI;
@@ -29,6 +30,8 @@ builder.Services.AddAuthorization(o => o.FallbackPolicy = o.DefaultPolicy);
 builder.Services.AddCascadingAuthenticationState();
 
 builder.Services.AddScoped<CryptoInterop>();
+
+builder.Services.AddScoped<VaultState>();
 
 // CORS pour le dev local
 builder.Services.AddCors(opt =>

@@ -2,6 +2,7 @@
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.Identity.Web
 @using front_gestionnaire_mot_de_passe.Components.PasswordStrengthMeter
+@using front_gestionnaire_mot_de_passe.Models
 @attribute [Authorize]
 @attribute [AuthorizeForScopes(Scopes = new[] { "api://b8f83755-0f15-42f5-9a43-cedf7cc50c0a/access_as_user" })]
 @inject ITokenAcquisition TokenAcquisition
@@ -39,6 +40,8 @@
     [Parameter] public bool IsVisible { get; set; } = false;
     [Parameter] public EventCallback OnClose { get; set; }
     [Parameter] public EventCallback<int> OnCreated { get; set; }
+    [Parameter]
+    public Vault VaultData { get; set; } = default!;
     
     private bool _tokenPushed;
     private string _vaultName = string.Empty;
