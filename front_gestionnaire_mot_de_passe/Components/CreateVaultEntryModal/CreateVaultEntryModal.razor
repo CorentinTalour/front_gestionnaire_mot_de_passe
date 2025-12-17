@@ -23,7 +23,6 @@
                 <div style="display:flex; gap:.5rem; align-items:center;">
                     <input id="ce-password"
                            type="@(_showPassword ? "text" : "password")"
-                           @bind="_password"
                            autocomplete="new-password"
                            style="flex:1;" />
 
@@ -52,7 +51,7 @@
                 <textarea id="ce-notes" rows="3"></textarea>
             </div>
             
-            <PasswordStrengthMeter Password="@_password" />
+            @* <PasswordStrengthMeter Password="@_password" /> *@
 
             <div class="modal-actions">
                 <button @onclick="SubmitForm">Enregistrer</button>
@@ -72,12 +71,11 @@
     [Parameter] public EventCallback OnClose { get; set; }
     [Parameter] public EventCallback OnCreated { get; set; }
     [Parameter] public int VaultId { get; set; }
-    private string _password = "";
 
     private bool _tokenPushed;
     private string? _error;
     
-    private bool _showPassword = false;
+    private bool _showPassword;
 
     private void TogglePasswordVisibility()
     {
@@ -86,7 +84,7 @@
     
     private async Task GeneratePassword()
     {
-        _password = await Crypto.GenerateSecurePasswordAsync(16);
+        await Crypto.GenerateAndFillPasswordAsync("ce-password", 16);
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -110,7 +108,7 @@
 
         try
         {
-            var ok = await Crypto.CreateEntryFromModalAsync(VaultId, "https://localhost:7115");
+            var ok = await Crypto.CreateEntryFromModalAsync(VaultId);
             if (ok)
             {
                 if (OnCreated.HasDelegate) await OnCreated.InvokeAsync();

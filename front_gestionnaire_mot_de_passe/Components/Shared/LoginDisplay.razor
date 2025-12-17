@@ -1,5 +1,8 @@
 @using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.Identity.Abstractions
+@using Microsoft.Identity.Web
 @inject NavigationManager Navigation
+@inject IDownstreamApi DownstreamApi
 @inherits LayoutComponentBase
 @page "/LoginDisplay"
 
@@ -17,11 +20,36 @@
             </form>
         </div>
     </Authorized>
-    <NotAuthorized>s
+    <NotAuthorized>
         <a href="authentication/login">Log in</a>
     </NotAuthorized>
 </AuthorizeView>
 
 @code {
-    
+    [CascadingParameter]
+    private Task<AuthenticationState>? AuthenticationStateTask { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (AuthenticationStateTask == null) return;
+
+        var authState = await AuthenticationStateTask;
+        var user = authState.User;
+
+        if (user.Identity is { IsAuthenticated: true })
+        {
+            try
+            {
+                await DownstreamApi.CallApiForUserAsync("DownstreamApi", options =>
+                {
+                    options.RelativePath = "Users/RegisterUser";
+                    options.HttpMethod = HttpMethod.Post.Method;
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Erreur lors de l'appel à RegisterUser: {ex.Message}");
+            }
+        }
+    }
 }

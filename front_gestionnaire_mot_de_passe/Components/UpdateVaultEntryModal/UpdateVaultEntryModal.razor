@@ -1,5 +1,5 @@
 @inject Interop.CryptoInterop Crypto
-@using front_gestionnaire_mot_de_passe.Components.PasswordStrengthMeter
+@using front_gestionnaire_mot_de_passe.Models
 
 
 @if (IsVisible)
@@ -19,7 +19,6 @@
                 <div style="display:flex; gap:.5rem; align-items:center;">
                     <input id="ce-password"
                            type="@(_showPassword ? "text" : "password")"
-                           @bind="_password"
                            autocomplete="new-password"
                            style="flex:1;" />
 
@@ -46,7 +45,7 @@
                 <textarea id="ce-notes" rows="3"></textarea>
             </div>
             
-            <PasswordStrengthMeter Password="@_password" />
+            @* <PasswordStrengthMeter Password="@_password" /> *@
 
             <div class="modal-actions">
                 <button @onclick="SubmitUpdateForm">Enregistrer</button>
@@ -64,13 +63,34 @@
 @code {
     [Parameter] public bool IsVisible { get; set; }
     [Parameter] public EventCallback OnClose { get; set; }
-    [Parameter] public EventCallback OnCreated { get; set; }
+    [Parameter] public EventCallback OnUpdated { get; set; }
     [Parameter] public int EntryId { get; set; }
-    private string _password = "";
-    private bool _tokenPushed;
-    private string? _error;
-    private bool _showPassword = false;
+    [Parameter] public VaultEntry? Entry { get; set; }
     
+    private string? _error;
+    private bool _showPassword;
+    private bool _hasFilled;
+    private bool _prevVisible;
+
+    protected override void OnParametersSet()
+    {
+        if (IsVisible && !_prevVisible)
+        {
+            _hasFilled = false;
+        }
+        _prevVisible = IsVisible;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (IsVisible && !_hasFilled && Entry != null)
+        {
+            _hasFilled = true;
+            // Petit délai pour s'assurer que le DOM est prêt si nécessaire, 
+            // mais OnAfterRenderAsync devrait suffire.
+            await Crypto.FillUpdateModalAsync(Entry.VaultId, Entry);
+        }
+    }
 
     private void TogglePasswordVisibility()
     {
@@ -79,7 +99,7 @@
     
     private async Task GeneratePassword()
     {
-        _password = await Crypto.GenerateSecurePasswordAsync(16);
+        await Crypto.GenerateAndFillPasswordAsync("ce-password", 16);
     }
     
     
@@ -97,10 +117,10 @@
 
         try
         {
-            var ok = await Crypto.UpdateEntryFromModalAsync(EntryId, "https://localhost:7115");
+            var ok = await Crypto.UpdateEntryFromModalAsync(EntryId);
             if (ok)
             {
-                if (OnCreated.HasDelegate) await OnCreated.InvokeAsync();
+                if (OnUpdated.HasDelegate) await OnUpdated.InvokeAsync();
                 await CloseModal();
             }
             else
@@ -115,3 +135,7 @@
     }
     
 }
+
+
+
+

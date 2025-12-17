@@ -42,7 +42,6 @@
     [Parameter, EditorRequired]
     public Vault VaultData { get; set; } = default!;
 
-    private string _vaultPassword = string.Empty;
     private string? _errorMessage;
     private bool _tokenPushed;
 
@@ -73,7 +72,7 @@
     {
         _errorMessage = null;
 
-        if (VaultId <= 0) { _errorMessage = "VaultId manquant."; return; }
+        if (VaultId == null || VaultId <= 0) { _errorMessage = "VaultId manquant."; return; }
         if (string.IsNullOrWhiteSpace(VaultSalt) || VaultIterations <= 0) { _errorMessage = "Paramètres du coffre (salt/iterations) manquants."; return; }
 
         try
@@ -83,8 +82,7 @@
                 // ID du champ input dans le modal
                 "vault-master-pwd",
                 VaultSalt!,
-                VaultIterations!.Value,
-                "https://localhost:7115"
+                VaultIterations!.Value
             );
 
             if (!ok)
@@ -106,7 +104,7 @@
 
     private async Task CloseModal()
     {
-        _vaultPassword = "";
+        //_vaultPassword = "";
         if (OnClose.HasDelegate)
             await OnClose.InvokeAsync();
     }

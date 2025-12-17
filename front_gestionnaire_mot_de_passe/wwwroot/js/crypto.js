@@ -656,3 +656,38 @@ export async function openVaultFromModal(vaultId, inputId, vaultSaltB64, iterati
     el.value = "";
     return true;
 }
+
+export async function fillUpdateModal(vaultId, entry) {
+    if (!currentVault?.key) throw new Error("Vault non ouvert (clé AES absente).");
+
+    const ns = `vault:${vaultId}`;
+    const setVal = (id, value) => {
+        const el = document.getElementById(id);
+        if (el) el.value = value ?? "";
+    };
+
+    const dec = async (obj, aad) => {
+        if (!obj) return "";
+        const c  = asU8(obj.cypher ?? obj.baseCypher);
+        const t  = asU8(obj.cypherTag ?? obj.baseCypherTag);
+        const iv = asU8(obj.cypherIv ?? obj.baseCypherIv);
+        return await decFieldWithVaultKey(c, t, iv, aad);
+    };
+
+    setVal("ce-username", await dec(entry.userNameCypher, `${ns}|field:username`));
+    
+    const clearPwd = await dec(entry.passwordCypher, `${ns}|field:password`);
+    setVal("ce-password", clearPwd);
+    
+    setVal("ce-url",      await dec(entry.urlCypher,      `${ns}|field:url`));
+    setVal("ce-notes",    await dec(entry.noteCypher,     `${ns}|field:notes`));
+
+    touchVault();
+}
+
+export function generateAndFillPassword(elementId, length) {
+    const pwd = generateSecurePassword(length);
+    const el = document.getElementById(elementId);
+    if (el) el.value = pwd;
+}
+
