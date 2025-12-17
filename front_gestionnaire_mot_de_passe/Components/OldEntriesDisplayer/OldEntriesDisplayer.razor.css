@@ -1,0 +1,44 @@
+/* Carte affichant l'historique des mots de passe pour une entrée */
+.display-card {
+    background-color: #111;
+    color: #fff;
+    border: 1px solid #222;
+    border-radius: 12px;
+    box-shadow: 0 0 15px rgba(255, 105, 180, 0.2);
+    padding: 1rem 1.5rem;
+    width: 75%;
+    display: flex;
+    justify-content: space-around;
+    gap: 1rem;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.display-card-header {
+    display: flex;
+    gap: 0.8rem;
+    width: 100%;
+    padding-bottom: 0.5rem;
+}
+
+
+.display-info {
+    background-color: #1a1a1a;
+    border-radius: 8px;
+    padding: 0.8rem 1rem;
+    border: 1px solid #333;
+    box-shadow: inset 0 0 5px rgba(255, 105, 180, 0.2);
+}
+
+.display-info p {
+    margin: 0;
+    color: #ddd;
+}
+
+.display-info strong {
+    color: pink;
+}
+
+.display-actions {
+    display: flex;
+    justify-content: flex-end;
+}

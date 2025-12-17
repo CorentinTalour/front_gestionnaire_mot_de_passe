@@ -354,7 +354,7 @@ export async function createEntryFromModal(vaultId, apiBase = "https://localhost
     }
 
     // 3) Chiffrement côté client (AAD lie chaque champ au vault + type)
-    const ns = `vault:${vaultId}`;
+    const ns = `vault:${currentVault.id}`;
     const userNameCypherObj = await makeCypherObj(username, `${ns}|field:username`);
     const passwordCypherObj = await makeCypherObj(password, `${ns}|field:password`);
     const urlCypherObj = await makeCypherObj(url, `${ns}|field:url`);
@@ -469,8 +469,14 @@ function asU8(x) {
 }
 
 export async function decryptEntryToDom(vaultId, entry, ids) {
-    if (!currentVault?.key) throw new Error("Vault non ouvert (clé AES absente).");
 
+    if (!currentVault?.key) {
+        console.error("Vault non ouvert ou clé absente !");
+        throw new Error("Vault non ouvert (clé AES absente).");
+    } 
+
+    
+    
     const ns = `vault:${vaultId}`;
     const setText = (id, value) => {
         const el = document.getElementById(id);
@@ -484,6 +490,7 @@ export async function decryptEntryToDom(vaultId, entry, ids) {
         const iv = asU8(obj.cypherIv ?? obj.baseCypherIv);
         return await decFieldWithVaultKey(c, t, iv, aad);
     };
+    console.log("coucou 2")
 
     // tes propriétés sont en camelCase d’après ton log
     setText(ids.nameId,     await dec(entry.nomCypher,      `${ns}|field:name`));
@@ -494,9 +501,24 @@ export async function decryptEntryToDom(vaultId, entry, ids) {
     _plainSecretsByElementId.set(ids.passwordId, clearPwd);
     _visibleByElementId.set(ids.passwordId, false);
 
+    const nameClear = await dec(entry.nomCypher, `${ns}|field:name`);
+    const usernameClear = await dec(entry.userNameCypher, `${ns}|field:username`);
+    const passwordClear = await dec(entry.passwordCypher, `${ns}|field:password`);
+    const urlClear = await dec(entry.urlCypher, `${ns}|field:url`);
+    const notesClear = await dec(entry.noteCypher, `${ns}|field:notes`);
+    
+    console.log("coucou 3")
     // affichage masqué par défaut
     setText(ids.passwordId, maskPassword(clearPwd));    setText(ids.urlId,      await dec(entry.urlCypher,      `${ns}|field:url`));
     setText(ids.notesId,    await dec(entry.noteCypher,     `${ns}|field:notes`));
+
+    console.log("Déchiffrement complet :", {
+        name: nameClear,
+        username: usernameClear,
+        password: clearPwd,
+        url: urlClear,
+        notes: notesClear
+    });
 
     touchVault();
 }

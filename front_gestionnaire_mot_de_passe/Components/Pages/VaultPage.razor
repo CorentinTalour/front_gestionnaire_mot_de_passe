@@ -62,6 +62,9 @@
             <Displayer Entry="e" VaultId="@id" OnDeleted="ReloadEntriesAsync"/>
         }
     }
+    
+
+    
 </section>
 
     <DeleteVaultModal IsVisible="@_isDeleteModalVisible"
@@ -87,6 +90,7 @@
     private List<VaultEntry>? _entries;
     private bool _isModalVisibleCreateVault = false;
     private bool _isUpdateVaultModalVisible = false;
+    
 
 
     private void ShowModal()
@@ -120,6 +124,10 @@
             "DownstreamApi",
             o => o.RelativePath = $"/Entry/VaultId?vaultId={id}"
         ) ?? new();
+
+        
+        
+       
 
         StateHasChanged();
     }

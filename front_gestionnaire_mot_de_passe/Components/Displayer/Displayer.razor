@@ -1,3 +1,4 @@
+@using front_gestionnaire_mot_de_passe.Components.OldEntriesDisplayer
 @using front_gestionnaire_mot_de_passe.Models
 @rendermode InteractiveServer
 @inject front_gestionnaire_mot_de_passe.Interop.CryptoInterop Crypto
@@ -68,7 +69,34 @@
                     <p class="error-text">@_error</p>
                 }
             </div>
+            
+            @* <ul> *@
+            @*     @foreach (var e in _oldEntries ?? Enumerable.Empty<VaultEntry>()) *@
+            @*     { *@
+            @*         <li> *@
+            @*             Entrée #@e.Id  *@
+            @*         </li> *@
+            @*     } *@
+            @* </ul> *@
+            
+            @if (_oldEntries?.Any() == true)
+            {
+                <h3>Historique</h3>
+                @foreach (var e in _oldEntries)
+                {
+                    <div class="old-entry-card">
+                        <h4>Entrée #@e.Id</h4>
+                        <p><strong>Nom :</strong> <span id="@DomId("entry-@e.Id-name")" >…</span></p>
+                        <p><strong>Nom d'utilisateur :</strong> <span id="entry-@e.Id-username">…</span></p>
+                        <p><strong>Mot de passe :</strong> <span id="entry-@e.Id-password">••••••••</span></p>
+                        <p><strong>URL :</strong> <span id="entry-@e.Id-url">…</span></p>
+                        <p><strong>Note :</strong> <span id="entry-@e.Id-notes">…</span></p>
+                    </div>
+                }
+            }
+            
         </section>
+        
     </div>
 }
 
@@ -80,6 +108,8 @@
     private bool _showModal;
     private bool _needDecrypt;
     private string? _error;
+    private List<VaultEntry>? _oldEntries;
+    private bool _oldEntriesLoading;
 
     private readonly string _uid = Guid.NewGuid().ToString("N");
     private string DomId(string field) => $"entry-{Entry.Id}-{_uid}-{field}";
@@ -89,7 +119,25 @@
         _error = null;
         _showModal = true;
         _needDecrypt = true;
-        await InvokeAsync(StateHasChanged);
+
+        try
+        {
+            _oldEntriesLoading = true;
+
+            _oldEntries = await DownstreamApi.GetForUserAsync<List<VaultEntry>>(
+                "DownstreamApi",
+                o => o.RelativePath = $"/Entry/{Entry.Id}"
+            ) ?? new();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _oldEntriesLoading = false;
+            await InvokeAsync(StateHasChanged);
+        }
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -110,6 +158,32 @@
                 });
             }
             catch (Exception ex)
+            {
+                _error = ex.Message;
+                await InvokeAsync(StateHasChanged);
+            }
+
+            try
+            {
+                if (_oldEntries?.Any() == true)
+                {
+                    foreach (var e in _oldEntries)
+                    {
+                        await Crypto.DecryptEntryToDomAsync(e.VaultId, e, new
+                        {
+                            nameId = $"entry-{e.Id}-name",
+                            usernameId = $"entry-{e.Id}-username",
+                            passwordId = $"entry-{e.Id}-password",
+                            urlId = $"entry-{e.Id}-url",
+                            notesId = $"entry-{e.Id}-notes"
+                        });
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("ya rien");
+                }
+            } catch (Exception ex)
             {
                 _error = ex.Message;
                 await InvokeAsync(StateHasChanged);
@@ -189,4 +263,5 @@
             _error = ex.Message;
         }
     }
+}
 }
