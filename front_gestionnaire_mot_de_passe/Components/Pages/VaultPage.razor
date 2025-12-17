@@ -5,6 +5,7 @@
 @using front_gestionnaire_mot_de_passe.Components.CreateVaultEntryModal
 @using front_gestionnaire_mot_de_passe.Models
 @using front_gestionnaire_mot_de_passe.Components.DeleteVaultModal
+@using front_gestionnaire_mot_de_passe.Components.EditMembers
 @using front_gestionnaire_mot_de_passe.Components.OpenVaultModal
 @using front_gestionnaire_mot_de_passe.Services
 @inject front_gestionnaire_mot_de_passe.Interop.CryptoInterop Crypto
@@ -23,13 +24,13 @@
                                    OnClose="HideModal"
                                    OnCreated="ReloadEntriesAsync" />
             
-            <button class="menu_button_share">Partager coffre-fort</button>
+            <button @onclick="() => _isEditingMembers = true" class="menu_button_share">Gérer les membres</button>
         </div>
 
         <h2 class="menu_title">Votre coffre fort @(VaultData?.Name)</h2>
 
         <div class="menu_vault_bottom">
-            <button class="menu_button_remove_user">Exclure utilisateur</button>
+            
             <button class="menu_button_update_vault"
                     @onclick="ShowUpdateVaultModal">
                 Modifier coffre
@@ -41,10 +42,15 @@
     
     <h3 class="vault_title">Liste des mots de passe</h3>
 
-    <UpdateVaultModal IsVisible="@_isUpdateVaultModalVisible"
-                      VaultId="@id"
-                      OnClose="HideUpdateVaultModal"
-                      OnUpdated="OnVaultUpdated" />
+<UpdateVaultModal IsVisible="@_isUpdateVaultModalVisible"
+                  VaultId="@id"
+                  OnClose="HideUpdateVaultModal"
+                  OnUpdated="OnVaultUpdated" />
+
+    @if (_isEditingMembers)
+    {
+        <ModalEditMembers VaultId="@id" OnClose="@(() => _isEditingMembers = false)" />
+    }
     
 <section class="display_entries_zone">
     @if (_entries is null)

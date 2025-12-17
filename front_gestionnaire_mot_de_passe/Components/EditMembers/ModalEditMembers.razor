@@ -1,0 +1,43 @@
+﻿<div class="modal-backdrop" @onclick="() => OnClose.InvokeAsync()">
+    <div class="modal-content" @onclick:stopPropagation="true">
+        @if (!IsAddingMember)
+        {
+            <h2>Gerer les utilisateur dans le vault</h2>
+            <div class="form-group">
+                @if (MembersAllreadyAdded != null)
+                {
+                    foreach (var member in MembersAllreadyAdded)
+                    {
+                        <div class="card">
+                            <p>@member.Email</p>
+                            <img src="icone/poubelle.svg" alt="" @onclick="() => RemoveMember(member.Id)"/>
+                        </div>
+                    }
+                }
+            </div>
+            <div class="modal-actions">
+                <button @onclick="() => IsAddingMember = true">Ajouter un nouveau membre</button>
+                <button @onclick="() => OnClose.InvokeAsync()">Fermer</button>
+            </div>
+        }
+        else
+        {
+            <h2>Ajouter l'utilisateur dans le vault</h2>
+            <div class="form-group">
+                @if (UsersList != null)
+                {
+                    @foreach (var user in UsersList)
+                    {
+                        <div class="card" @onclick="() => AddMember(user.Id)">
+                            <p>@user.Email</p>
+                        </div>
+                    }
+                }
+            </div>
+            <div class="modal-actions">
+                <button @onclick="() => IsAddingMember = false">Retour</button>
+                <button @onclick="() => OnClose.InvokeAsync()">Fermer</button>
+            </div>
+        }
+    </div>
+</div>
