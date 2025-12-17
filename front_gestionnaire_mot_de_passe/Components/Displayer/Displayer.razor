@@ -1,6 +1,6 @@
 @using front_gestionnaire_mot_de_passe.Models
 @rendermode InteractiveServer
-@inject front_gestionnaire_mot_de_passe.Interop.CryptoInterop Crypto
+@inject Interop.CryptoInterop Crypto
 @inject Microsoft.Identity.Abstractions.IDownstreamApi DownstreamApi
 @using front_gestionnaire_mot_de_passe.Components.UpdateVaultEntryModal
 
@@ -80,12 +80,15 @@
 }
 <UpdateVaultEntryModal IsVisible="@_isUpdateModalVisible"
                        EntryId="@Entry.Id"
-                       OnClose="HideUpdateModal" />
+                       Entry="@Entry"
+                       OnClose="HideUpdateModal"
+                       OnUpdated="HandleEntryUpdated" />
 
 @code {
     [Parameter, EditorRequired] public VaultEntry Entry { get; set; } = default!;
     [Parameter] public int VaultId { get; set; }
     [Parameter] public EventCallback OnDeleted { get; set; }
+    [Parameter] public EventCallback OnUpdated { get; set; }
 
     private bool _showModal;
     private bool _needDecrypt;
@@ -97,6 +100,7 @@
 
     private async Task OpenModalAsync()
     {
+        // Ouverture de la modale
         _error = null;
         _showModal = true;
         _needDecrypt = true;
@@ -111,6 +115,16 @@
     private async Task HideUpdateModal()
     {
         _isUpdateModalVisible = false;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task HandleEntryUpdated()
+    {
+        _isUpdateModalVisible = false;
+        if (OnUpdated.HasDelegate)
+        {
+            await OnUpdated.InvokeAsync();
+        }
         await InvokeAsync(StateHasChanged);
     }
 
