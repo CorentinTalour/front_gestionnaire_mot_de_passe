@@ -6,12 +6,12 @@
 
 <div class="display-card">
     <div class="display-card-header">
-        <img src="cle_icon.jpg" alt="Icône de clé" class="vault-key-icon" />
+        <img src="cle_icon.jpg" alt="Icône de clé" class="vault-key-icon"/>
         <div class="display-info">
             <p><strong>Entrée #@Entry.Id</strong></p>
         </div>
     </div>
-    
+
     <div class="display-actions">
         <button class="consult-btn" type="button" @onclick="ShowUpdateModal">Modifier</button>
     </div>
@@ -29,7 +29,7 @@
                 <button class="entry-back-button" type="button" @onclick="CloseModal">
                     ← Retour au coffre
                 </button>
-                
+
                 <button class="entry-back-button" type="button" @onclick="DeleteVaultEntry">
                     Supprimer l'élément
                 </button>
@@ -74,7 +74,7 @@
                     <p class="error-text">@_error</p>
                 }
             </div>
-            
+
             @if (_oldEntries?.Any() == true)
             {
                 <h3>Historique</h3>
@@ -82,7 +82,6 @@
                 {
                     <div class="old-entry-card">
                         <h4>Entrée #@e.Id</h4>
-                        <p><strong>Nom :</strong> <span id="@DomId("entry-@e.Id-name")" >…</span></p>
                         <p><strong>Nom d'utilisateur :</strong> <span id="entry-@e.Id-username">…</span></p>
                         <p><strong>Mot de passe :</strong> <span id="entry-@e.Id-password">••••••••</span></p>
                         <p><strong>URL :</strong> <span id="entry-@e.Id-url">…</span></p>
@@ -92,11 +91,10 @@
             }
         </section>
     </div>
-    
 }
 <UpdateVaultEntryModal IsVisible="@_isUpdateModalVisible"
                        EntryId="@Entry.Id"
-                       OnClose="HideUpdateModal" />
+                       OnClose="HideUpdateModal"/>
 
 @code {
     [Parameter, EditorRequired] public VaultEntry Entry { get; set; } = default!;
@@ -120,8 +118,6 @@
 
         try
         {
-          
-
             _oldEntries = await DownstreamApi.GetForUserAsync<List<VaultEntry>>(
                 "DownstreamApi",
                 o => o.RelativePath = $"/Entry/{Entry.Id}"
@@ -133,16 +129,15 @@
         }
         finally
         {
-           
             await InvokeAsync(StateHasChanged);
         }
     }
-    
+
     private void ShowUpdateModal()
     {
         _isUpdateModalVisible = true;
     }
-    
+
     private async Task HideUpdateModal()
     {
         _isUpdateModalVisible = false;
@@ -171,14 +166,14 @@
                 _error = ex.Message;
                 await InvokeAsync(StateHasChanged);
             }
-            
+
             try
             {
                 if (_oldEntries?.Any() == true)
                 {
                     foreach (var e in _oldEntries)
                     {
-                        await Crypto.DecryptEntryToDomAsync(e.VaultId, e, new
+                        await Crypto.DecryptEntryToDomAsync(VaultId, e, new
                         {
                             nameId = $"entry-{e.Id}-name",
                             usernameId = $"entry-{e.Id}-username",
@@ -192,7 +187,8 @@
                 {
                     Console.WriteLine("ya rien");
                 }
-            } catch (Exception ex)
+            }
+            catch (Exception ex)
             {
                 _error = ex.Message;
                 await InvokeAsync(StateHasChanged);
@@ -228,7 +224,7 @@
 
         return val?.ToString() ?? "Aucune mise à jour";
     }
-    
+
     private async Task TogglePasswordAsync()
     {
         try
@@ -254,9 +250,9 @@
                     options.HttpMethod = HttpMethod.Delete.Method;
                     options.RelativePath = $"/Entry?entryId={Entry.Id}";
                 });
-            
+
             if (OnDeleted.HasDelegate)
-                await OnDeleted.InvokeAsync(); 
+                await OnDeleted.InvokeAsync();
 
             if (!res.IsSuccessStatusCode)
             {
@@ -264,7 +260,7 @@
                 _error = $"DELETE échoué: {(int)res.StatusCode} {res.ReasonPhrase} {body}";
                 return;
             }
-            
+
             CloseModal();
         }
         catch (Exception ex)

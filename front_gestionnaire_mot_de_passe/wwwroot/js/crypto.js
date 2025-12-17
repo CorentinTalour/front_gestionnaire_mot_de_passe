@@ -540,13 +540,17 @@ function asU8(x) {
 
 export async function decryptEntryToDom(vaultId, entry, ids) {
 
+    if (!currentVault?.key) throw new Error("Vault non ouvert (clé AES absente).");
+
+    if (currentVault.id != vaultId) {
+        throw new Error(`Vault ouvert = ${currentVault.id}, mais on tente de déchiffrer vaultId = ${vaultId}`);
+    }
+    
     if (!currentVault?.key) {
         console.error("Vault non ouvert ou clé absente !");
         throw new Error("Vault non ouvert (clé AES absente).");
     }
-
-    console.log(ids);
-
+    
     const ns = `vault:${vaultId}`;
     const setText = (id, value) => {
         const el = document.getElementById(id);
@@ -560,7 +564,6 @@ export async function decryptEntryToDom(vaultId, entry, ids) {
         const iv = asU8(obj.cypherIv ?? obj.baseCypherIv);
         return await decFieldWithVaultKey(c, t, iv, aad);
     };
-    console.log("coucou 2")
 
     // tes propriétés sont en camelCase d’après ton log
     setText(ids.nameId,     await dec(entry.nomCypher,      `${ns}|field:name`));
@@ -577,18 +580,9 @@ export async function decryptEntryToDom(vaultId, entry, ids) {
     const urlClear = await dec(entry.urlCypher, `${ns}|field:url`);
     const notesClear = await dec(entry.noteCypher, `${ns}|field:notes`);
 
-    console.log("coucou 3")
     // affichage masqué par défaut
     setText(ids.passwordId, maskPassword(clearPwd));    setText(ids.urlId,      await dec(entry.urlCypher,      `${ns}|field:url`));
     setText(ids.notesId,    await dec(entry.noteCypher,     `${ns}|field:notes`));
-
-    console.log("Déchiffrement complet :", {
-        name: nameClear,
-        username: usernameClear,
-        password: clearPwd,
-        url: urlClear,
-        notes: notesClear
-    });
 
     touchVault();
 }
