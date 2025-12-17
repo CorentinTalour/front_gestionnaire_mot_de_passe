@@ -74,6 +74,22 @@
                     <p class="error-text">@_error</p>
                 }
             </div>
+            
+            @if (_oldEntries?.Any() == true)
+            {
+                <h3>Historique</h3>
+                @foreach (var e in _oldEntries)
+                {
+                    <div class="old-entry-card">
+                        <h4>Entrée #@e.Id</h4>
+                        <p><strong>Nom :</strong> <span id="@DomId("entry-@e.Id-name")" >…</span></p>
+                        <p><strong>Nom d'utilisateur :</strong> <span id="entry-@e.Id-username">…</span></p>
+                        <p><strong>Mot de passe :</strong> <span id="entry-@e.Id-password">••••••••</span></p>
+                        <p><strong>URL :</strong> <span id="entry-@e.Id-url">…</span></p>
+                        <p><strong>Note :</strong> <span id="entry-@e.Id-notes">…</span></p>
+                    </div>
+                }
+            }
         </section>
     </div>
     
@@ -91,6 +107,7 @@
     private bool _needDecrypt;
     private string? _error;
     private bool _isUpdateModalVisible;
+    private List<VaultEntry>? _oldEntries;
 
     private readonly string _uid = Guid.NewGuid().ToString("N");
     private string DomId(string field) => $"entry-{Entry.Id}-{_uid}-{field}";
@@ -100,6 +117,23 @@
         _error = null;
         _showModal = true;
         _needDecrypt = true;
+
+        try
+        {
+            await DownstreamApi.CallApiForUserAsync(
+                "DownstreamApi",
+                options =>
+                {
+                    options.HttpMethod = HttpMethod.Get.Method;
+                    options.RelativePath = $"/Entry/{Entry.Id}";
+                });
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+            Console.WriteLine(ex);
+        }
+
         await InvokeAsync(StateHasChanged);
     }
     
@@ -132,6 +166,32 @@
                 });
             }
             catch (Exception ex)
+            {
+                _error = ex.Message;
+                await InvokeAsync(StateHasChanged);
+            }
+            
+            try
+            {
+                if (_oldEntries?.Any() == true)
+                {
+                    foreach (var e in _oldEntries)
+                    {
+                        await Crypto.DecryptEntryToDomAsync(e.VaultId, e, new
+                        {
+                            nameId = $"entry-{e.Id}-name",
+                            usernameId = $"entry-{e.Id}-username",
+                            passwordId = $"entry-{e.Id}-password",
+                            urlId = $"entry-{e.Id}-url",
+                            notesId = $"entry-{e.Id}-notes"
+                        });
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("ya rien");
+                }
+            } catch (Exception ex)
             {
                 _error = ex.Message;
                 await InvokeAsync(StateHasChanged);
