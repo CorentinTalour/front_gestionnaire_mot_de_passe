@@ -61,8 +61,6 @@
 .modal-actions button:first-child {
     background: linear-gradient(to right, orange, pink);
     color: #fff;
-    opacity: 0.6; /* inactif */
-    cursor: not-allowed;
 }
 
 .modal-actions button:last-child {

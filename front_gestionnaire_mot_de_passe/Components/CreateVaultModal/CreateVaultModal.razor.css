@@ -20,7 +20,7 @@
     box-shadow: 0 0 15px rgba(255,105,180,0.3);
 }
 
-.modal-content h2 {
+.modal-content h2 { 
     margin-top: 0;
     color: orange;
 }
@@ -61,8 +61,6 @@
 .modal-actions button:first-child {
     background: linear-gradient(to right, orange, pink);
     color: #fff;
-    opacity: 0.6; /* inactif */
-    cursor: not-allowed;
 }
 
 .modal-actions button:last-child {

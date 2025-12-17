@@ -10,7 +10,7 @@
                     {
                         <div class="card">
                             <p>@member.Email</p>
-                            <img src="icone/poubelle.svg" alt="" @onclick="() => RemoveMember(member.Id)"/>
+                            <img src="trash_icon.svg" alt="" @onclick="() => RemoveMember(member.Id)"/>
                         </div>
                     }
                 }
@@ -35,7 +35,7 @@
                 }
             </div>
             <div class="modal-actions">
-                <button @onclick="() => IsAddingMember = false">Retour</button>
+                <button @onclick="() => IsAddingMember = false">Confirmer</button>
                 <button @onclick="() => OnClose.InvokeAsync()">Fermer</button>
             </div>
         }
