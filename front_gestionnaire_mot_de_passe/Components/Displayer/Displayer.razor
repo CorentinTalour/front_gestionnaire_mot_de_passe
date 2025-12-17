@@ -120,21 +120,22 @@
 
         try
         {
-            await DownstreamApi.CallApiForUserAsync(
+          
+
+            _oldEntries = await DownstreamApi.GetForUserAsync<List<VaultEntry>>(
                 "DownstreamApi",
-                options =>
-                {
-                    options.HttpMethod = HttpMethod.Get.Method;
-                    options.RelativePath = $"/Entry/{Entry.Id}";
-                });
+                o => o.RelativePath = $"/Entry/{Entry.Id}"
+            ) ?? new();
         }
         catch (Exception ex)
         {
             _error = ex.Message;
-            Console.WriteLine(ex);
         }
-
-        await InvokeAsync(StateHasChanged);
+        finally
+        {
+           
+            await InvokeAsync(StateHasChanged);
+        }
     }
     
     private void ShowUpdateModal()
