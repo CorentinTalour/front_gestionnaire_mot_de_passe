@@ -18,7 +18,7 @@ public class CryptoInterop
 
     private async Task<IJSObjectReference> Mod()
     {
-        var url = new Uri(new Uri(_nav.BaseUri), "js/crypto.js?v=21").ToString();
+        var url = new Uri(new Uri(_nav.BaseUri), "js/crypto.js?v=22").ToString();
         return _mod ??= await _js.InvokeAsync<IJSObjectReference>("import", url);
     }
     
@@ -49,45 +49,31 @@ public class CryptoInterop
     public async Task TouchVaultAsync()
         => await (await Mod()).InvokeVoidAsync("touchVault");
     
-    public async Task<System.Text.Json.JsonElement> VerifyVaultPasswordAsync(int vaultId, string password, string apiBase = "https://localhost:7115")
-        => await (await Mod()).InvokeAsync<System.Text.Json.JsonElement>("verifyVaultPassword", vaultId, password, apiBase);
-    
-    public async Task<bool> CreateEntryFromModalAsync(int vaultId, string apiBase)
-        => await (await Mod()).InvokeAsync<bool>("createEntryFromModal", vaultId, apiBase);
-    
-    public async Task<System.Text.Json.JsonElement> VerifyVaultPasswordServerAsync(
-        int? vaultId, string password, string apiBase = "https://localhost:7115") =>
-        await (await Mod()).InvokeAsync<System.Text.Json.JsonElement>(
-            "verifyVaultPasswordServer", vaultId, password, apiBase);
+    public async Task FillUpdateModalAsync(int vaultId, object entry)
+        => await (await Mod()).InvokeVoidAsync("fillUpdateModal", vaultId, entry);
 
-    public async Task ArmVaultSessionAsync(
-        int? vaultId, string password, string vaultSaltB64, int? iterations) =>
-        await (await Mod()).InvokeVoidAsync(
-            "armVaultSession", vaultId, password, vaultSaltB64, iterations);
-    
+    public async Task GenerateAndFillPasswordAsync(string elementId, int length)
+        => await (await Mod()).InvokeVoidAsync("generateAndFillPassword", elementId, length);
+
+    public async Task<bool> UpdateEntryFromModalAsync(int entryId, string apiBase = "https://localhost:7115")
+        => await (await Mod()).InvokeAsync<bool>("updateEntryFromModal", entryId, apiBase);
+
+    public async Task<bool> CreateEntryFromModalAsync(int vaultId, string apiBase = "https://localhost:7115")
+        => await (await Mod()).InvokeAsync<bool>("createEntryFromModal", vaultId, apiBase);
+
+    public async Task<bool> IsVaultOpenAsync(int vaultId)
+        => await (await Mod()).InvokeAsync<bool>("isVaultOpen", vaultId);
+
     public async Task DecryptEntryToDomAsync(int vaultId, object entry, object ids)
         => await (await Mod()).InvokeVoidAsync("decryptEntryToDom", vaultId, entry, ids);
 
     public async Task CopyDomTextToClipboardAsync(string elementId)
         => await (await Mod()).InvokeVoidAsync("copyDomTextToClipboard", elementId);
-    
+
     public async Task TogglePasswordVisibilityAsync(string elementId)
         => await (await Mod()).InvokeVoidAsync("togglePasswordVisibility", elementId);
-    
-    public async Task<string> GenerateSecurePasswordAsync(int length)
-        => await (await Mod()).InvokeAsync<string>(
-            "generateSecurePassword", length);
 
-    public async Task<bool> IsVaultOpenAsync(int vaultId)
-        => await (await Mod()).InvokeAsync<bool>("isVaultOpen", vaultId);
-    
-    public async Task<bool> OpenVaultFromModalAsync(
-        int vaultId,
-        string inputId,
-        string vaultSaltB64,
-        int iterations,
-        string apiBase = "https://localhost:7115")
-        => await (await Mod()).InvokeAsync<bool>(
-            "openVaultFromModal",
-            vaultId, inputId, vaultSaltB64, iterations, apiBase);
+    public async Task<bool> OpenVaultFromModalAsync(int vaultId, string inputId, string vaultSaltB64, int iterations, string apiBase = "https://localhost:7115")
+        => await (await Mod()).InvokeAsync<bool>("openVaultFromModal", vaultId, inputId, vaultSaltB64, iterations, apiBase);
+
 }

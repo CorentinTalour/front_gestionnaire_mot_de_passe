@@ -1,14 +1,19 @@
 @using front_gestionnaire_mot_de_passe.Models
 @rendermode InteractiveServer
-@inject front_gestionnaire_mot_de_passe.Interop.CryptoInterop Crypto
+@inject Interop.CryptoInterop Crypto
 @inject Microsoft.Identity.Abstractions.IDownstreamApi DownstreamApi
+@using front_gestionnaire_mot_de_passe.Components.UpdateVaultEntryModal
 
 <div class="display-card">
     <div class="display-card-header">
-        <img src="cle_icon.jpg" alt="Icône de clé" class="vault-key-icon" />
+        <img src="cle_icon.jpg" alt="Icône de clé" class="vault-key-icon"/>
         <div class="display-info">
             <p><strong>Entrée #@Entry.Id</strong></p>
         </div>
+    </div>
+
+    <div class="display-actions">
+        <button class="consult-btn" type="button" @onclick="ShowUpdateModal">Modifier</button>
     </div>
 
     <div class="display-actions">
@@ -24,8 +29,9 @@
                 <button class="entry-back-button" type="button" @onclick="CloseModal">
                     ← Retour au coffre
                 </button>
+
                 <button class="entry-back-button" type="button" @onclick="DeleteVaultEntry">
-                    Supprimer cette ligne
+                    Supprimer l'élément
                 </button>
             </div>
 
@@ -68,27 +74,87 @@
                     <p class="error-text">@_error</p>
                 }
             </div>
+
+            @if (_oldEntries?.Any() == true)
+            {
+                <h3>Historique</h3>
+                @foreach (var e in _oldEntries)
+                {
+                    <div class="old-entry-card">
+                        <h4>Entrée #@e.Id</h4>
+                        <p><strong>Nom d'utilisateur :</strong> <span id="entry-@e.Id-username">…</span></p>
+                        <p><strong>Mot de passe :</strong> <span id="entry-@e.Id-password">••••••••</span></p>
+                        <p><strong>URL :</strong> <span id="entry-@e.Id-url">…</span></p>
+                        <p><strong>Note :</strong> <span id="entry-@e.Id-notes">…</span></p>
+                    </div>
+                }
+            }
         </section>
     </div>
 }
+<UpdateVaultEntryModal IsVisible="@_isUpdateModalVisible"
+                       EntryId="@Entry.Id"
+                       Entry="@Entry"
+                       OnClose="HideUpdateModal"
+                       OnUpdated="HandleEntryUpdated" />
 
 @code {
     [Parameter, EditorRequired] public VaultEntry Entry { get; set; } = default!;
     [Parameter] public int VaultId { get; set; }
     [Parameter] public EventCallback OnDeleted { get; set; }
+    [Parameter] public EventCallback OnUpdated { get; set; }
 
     private bool _showModal;
     private bool _needDecrypt;
     private string? _error;
+    private bool _isUpdateModalVisible;
+    private List<VaultEntry>? _oldEntries;
 
     private readonly string _uid = Guid.NewGuid().ToString("N");
     private string DomId(string field) => $"entry-{Entry.Id}-{_uid}-{field}";
 
     private async Task OpenModalAsync()
     {
+        // Ouverture de la modale
         _error = null;
         _showModal = true;
         _needDecrypt = true;
+
+        try
+        {
+            _oldEntries = await DownstreamApi.GetForUserAsync<List<VaultEntry>>(
+                "DownstreamApi",
+                o => o.RelativePath = $"/Entry/{Entry.Id}"
+            ) ?? new();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private void ShowUpdateModal()
+    {
+        _isUpdateModalVisible = true;
+    }
+
+    private async Task HideUpdateModal()
+    {
+        _isUpdateModalVisible = false;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task HandleEntryUpdated()
+    {
+        _isUpdateModalVisible = false;
+        if (OnUpdated.HasDelegate)
+        {
+            await OnUpdated.InvokeAsync();
+        }
         await InvokeAsync(StateHasChanged);
     }
 
@@ -108,6 +174,33 @@
                     urlId = DomId("url"),
                     notesId = DomId("notes")
                 });
+            }
+            catch (Exception ex)
+            {
+                _error = ex.Message;
+                await InvokeAsync(StateHasChanged);
+            }
+
+            try
+            {
+                if (_oldEntries?.Any() == true)
+                {
+                    foreach (var e in _oldEntries)
+                    {
+                        await Crypto.DecryptEntryToDomAsync(VaultId, e, new
+                        {
+                            nameId = $"entry-{e.Id}-name",
+                            usernameId = $"entry-{e.Id}-username",
+                            passwordId = $"entry-{e.Id}-password",
+                            urlId = $"entry-{e.Id}-url",
+                            notesId = $"entry-{e.Id}-notes"
+                        });
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("ya rien");
+                }
             }
             catch (Exception ex)
             {
@@ -145,7 +238,7 @@
 
         return val?.ToString() ?? "Aucune mise à jour";
     }
-    
+
     private async Task TogglePasswordAsync()
     {
         try
@@ -171,9 +264,9 @@
                     options.HttpMethod = HttpMethod.Delete.Method;
                     options.RelativePath = $"/Entry?entryId={Entry.Id}";
                 });
-            
+
             if (OnDeleted.HasDelegate)
-                await OnDeleted.InvokeAsync(); 
+                await OnDeleted.InvokeAsync();
 
             if (!res.IsSuccessStatusCode)
             {
@@ -181,7 +274,7 @@
                 _error = $"DELETE échoué: {(int)res.StatusCode} {res.ReasonPhrase} {body}";
                 return;
             }
-            
+
             CloseModal();
         }
         catch (Exception ex)

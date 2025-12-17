@@ -20,7 +20,7 @@
         <div class="menu_vault_top">
             <button type="button" class="menu_button_create" @onclick="ShowModal">+</button>            
             <CreateVaultEntryModal IsVisible="@_isModalVisible"
-                                   VaultId="@id"
+                                   VaultId="@Id"
                                    OnClose="HideModal"
                                    OnCreated="ReloadEntriesAsync" />
             
@@ -42,10 +42,10 @@
     
     <h3 class="vault_title">Liste des mots de passe</h3>
 
-<UpdateVaultModal IsVisible="@_isUpdateVaultModalVisible"
-                  VaultId="@id"
-                  OnClose="HideUpdateVaultModal"
-                  OnUpdated="OnVaultUpdated" />
+    <UpdateVaultModal IsVisible="@_isUpdateVaultModalVisible"
+                      VaultId="@Id"
+                      OnClose="HideUpdateVaultModal"
+                      OnUpdated="OnVaultUpdated" />
 
     @if (_isEditingMembers)
     {
@@ -65,7 +65,7 @@
     {
         @foreach (var e in _entries)
         {
-            <Displayer Entry="e" VaultId="@id" OnDeleted="ReloadEntriesAsync"/>
+            <Displayer Entry="e" VaultId="@Id" OnDeleted="ReloadEntriesAsync" OnUpdated="ReloadEntriesAsync"/>
         }
     }
 </section>
@@ -77,7 +77,7 @@
 @if (_isReopenModalVisible)
 {
     <OpenVaultModal IsVisible="true"
-                    VaultId="@id"
+                    VaultId="@Id"
                     VaultData="@VaultData"
                     VaultSalt="@VaultData?.Salt"
                     VaultIterations="@VaultData?.NbIteration"
@@ -85,14 +85,13 @@
 }
 
 @code {
-    [Parameter] public int id { get; set; }
+    [Parameter] public int Id { get; set; }
     public Vault? VaultData { get; set; }
-    private bool _isModalVisible = false;
-    private bool _isDeleteModalVisible = false;
-    private bool _isReopenModalVisible = false;
+    private bool _isModalVisible;
+    private bool _isDeleteModalVisible;
+    private bool _isReopenModalVisible;
     private List<VaultEntry>? _entries;
-    private bool _isModalVisibleCreateVault = false;
-    private bool _isUpdateVaultModalVisible = false;
+    private bool _isUpdateVaultModalVisible;
 
 
     private void ShowModal()
@@ -120,11 +119,11 @@
             o => o.RelativePath = "/Vault/All"
         ) ?? new();
 
-        VaultData = vaults.FirstOrDefault(v => v.Id == id);
+        VaultData = vaults.FirstOrDefault(v => v.Id == Id);
 
         _entries = await DownstreamApi.GetForUserAsync<List<VaultEntry>>(
             "DownstreamApi",
-            o => o.RelativePath = $"/Entry/VaultId?vaultId={id}"
+            o => o.RelativePath = $"/Entry/VaultId?vaultId={Id}"
         ) ?? new();
 
         StateHasChanged();
@@ -135,7 +134,7 @@
         if (firstRender)
         {
             // Vérifier si le coffre est ouvert en RAM (JS)
-            var isOpen = await Crypto.IsVaultOpenAsync(id);
+            var isOpen = await Crypto.IsVaultOpenAsync(Id);
             if (!isOpen)
             {
                 // Si pas ouvert (ex: refresh page), on demande le mot de passe
@@ -166,7 +165,7 @@
     {
         _entries = await DownstreamApi.GetForUserAsync<List<VaultEntry>>(
             "DownstreamApi",
-            o => o.RelativePath = $"/Entry/VaultId?vaultId={id}"
+            o => o.RelativePath = $"/Entry/VaultId?vaultId={Id}"
         ) ?? new();
 
         StateHasChanged();
@@ -181,7 +180,7 @@
                 options =>
                 {
                     options.HttpMethod = HttpMethod.Delete.ToString();
-                    options.RelativePath = $"/Vault/{id}";
+                    options.RelativePath = $"/Vault/{Id}";
                 });
 
             _isDeleteModalVisible = false;

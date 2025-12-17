@@ -401,6 +401,76 @@ export async function createEntryFromModal(vaultId, apiBase = "https://localhost
 // ==============================
 // Modification “zéro mot de passe serveur” pour l'API
 // ==============================
+export async function updateEntryFromModal(EntryId, apiBase = "https://localhost:7115") {
+    // 1) Récupération des champs DOM
+    const userEl = document.getElementById("ce-username");
+    const pwdEl = document.getElementById("ce-password");
+    const urlEl = document.getElementById("ce-url");
+    const notesEl = document.getElementById("ce-notes");
+
+    if (!(userEl instanceof HTMLInputElement)) throw new Error("#ce-username introuvable");
+    if (!(pwdEl instanceof HTMLInputElement)) throw new Error("#ce-password introuvable");
+    if (!(urlEl instanceof HTMLInputElement)) throw new Error("#ce-url introuvable");
+    if (!(notesEl instanceof HTMLTextAreaElement)) throw new Error("#ce-notes introuvable");
+
+    const username = userEl.value ?? "";
+    const password = pwdEl.value ?? "";
+    const url = urlEl.value ?? "";
+    const notes = notesEl.value ?? "";
+
+    // 2) Vérifie que la clé de vault est bien en RAM
+    if (!currentVault?.key || currentVault.id == null) {
+        throw new Error("Vault non ouvert : clé AES introuvable côté client.");
+    }
+
+    // 3) Chiffrement côté client (AAD lie chaque champ au vault + type)
+    //const ns = `vault:${currentVault.id}|entry:${EntryId}`;
+    const ns = `vault:${currentVault.id}`;
+    const userNameCypherObj = await makeCypherObj(username, `${ns}|field:username`);
+    const passwordCypherObj = await makeCypherObj(password, `${ns}|field:password`);
+    const urlCypherObj = await makeCypherObj(url, `${ns}|field:url`);
+    const noteCypherObj = await makeCypherObj(notes, `${ns}|field:notes`);
+    
+    const nomCypherObj = await makeCypherObj(username, `${ns}|field:name`);
+
+    // Payload conforme à PostEntryObj
+    const payload = {
+        EntryId,
+        userNameCypherObj,
+        passwordCypherObj,
+        urlCypherObj,
+        noteCypherObj,
+        nomCypherObj
+    };
+
+    // Appel API    
+    const res = await fetch(`${apiBase}/Entry`, {
+        method: "PUT",
+        headers: {"Content-Type": "application/json", ...authHeaders()},
+        body: JSON.stringify(payload)
+    });
+
+    if (!res.ok) {
+        const text = await res.text().catch(() => "");
+        throw new Error(`Erreur API Entry: ${res.status} ${text}`);
+    }
+
+    // Nettoyage UI
+    userEl.value = "";
+    pwdEl.value = "";
+    urlEl.value = "";
+    notesEl.value = "";
+
+    // touche le timer d’auto-lock
+    touchVault();
+
+    return true;
+}
+
+
+// ==============================
+// Modification “zéro mot de passe serveur” pour l'API
+// ==============================
 export async function updateVaultFromModal(apiBase = "https://localhost:7115") {
     const root = document.querySelector(".modal-content");
     if (!root) throw new Error("Modal introuvable (.modal-content)");
@@ -469,8 +539,18 @@ function asU8(x) {
 }
 
 export async function decryptEntryToDom(vaultId, entry, ids) {
+
     if (!currentVault?.key) throw new Error("Vault non ouvert (clé AES absente).");
 
+    if (currentVault.id != vaultId) {
+        throw new Error(`Vault ouvert = ${currentVault.id}, mais on tente de déchiffrer vaultId = ${vaultId}`);
+    }
+    
+    if (!currentVault?.key) {
+        console.error("Vault non ouvert ou clé absente !");
+        throw new Error("Vault non ouvert (clé AES absente).");
+    }
+    
     const ns = `vault:${vaultId}`;
     const setText = (id, value) => {
         const el = document.getElementById(id);
@@ -493,6 +573,12 @@ export async function decryptEntryToDom(vaultId, entry, ids) {
     // on garde le clair en RAM JS (pas dans le DOM)
     _plainSecretsByElementId.set(ids.passwordId, clearPwd);
     _visibleByElementId.set(ids.passwordId, false);
+
+    const nameClear = await dec(entry.nomCypher, `${ns}|field:name`);
+    const usernameClear = await dec(entry.userNameCypher, `${ns}|field:username`);
+    const passwordClear = await dec(entry.passwordCypher, `${ns}|field:password`);
+    const urlClear = await dec(entry.urlCypher, `${ns}|field:url`);
+    const notesClear = await dec(entry.noteCypher, `${ns}|field:notes`);
 
     // affichage masqué par défaut
     setText(ids.passwordId, maskPassword(clearPwd));    setText(ids.urlId,      await dec(entry.urlCypher,      `${ns}|field:url`));
@@ -570,3 +656,38 @@ export async function openVaultFromModal(vaultId, inputId, vaultSaltB64, iterati
     el.value = "";
     return true;
 }
+
+export async function fillUpdateModal(vaultId, entry) {
+    if (!currentVault?.key) throw new Error("Vault non ouvert (clé AES absente).");
+
+    const ns = `vault:${vaultId}`;
+    const setVal = (id, value) => {
+        const el = document.getElementById(id);
+        if (el) el.value = value ?? "";
+    };
+
+    const dec = async (obj, aad) => {
+        if (!obj) return "";
+        const c  = asU8(obj.cypher ?? obj.baseCypher);
+        const t  = asU8(obj.cypherTag ?? obj.baseCypherTag);
+        const iv = asU8(obj.cypherIv ?? obj.baseCypherIv);
+        return await decFieldWithVaultKey(c, t, iv, aad);
+    };
+
+    setVal("ce-username", await dec(entry.userNameCypher, `${ns}|field:username`));
+    
+    const clearPwd = await dec(entry.passwordCypher, `${ns}|field:password`);
+    setVal("ce-password", clearPwd);
+    
+    setVal("ce-url",      await dec(entry.urlCypher,      `${ns}|field:url`));
+    setVal("ce-notes",    await dec(entry.noteCypher,     `${ns}|field:notes`));
+
+    touchVault();
+}
+
+export function generateAndFillPassword(elementId, length) {
+    const pwd = generateSecurePassword(length);
+    const el = document.getElementById(elementId);
+    if (el) el.value = pwd;
+}
+

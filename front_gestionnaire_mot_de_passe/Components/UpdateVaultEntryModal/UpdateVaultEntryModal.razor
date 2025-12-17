@@ -1,16 +1,12 @@
-@using front_gestionnaire_mot_de_passe.Components.PasswordStrengthMeter
-@using Microsoft.AspNetCore.Authorization
-@using Microsoft.Identity.Web
-@attribute [Authorize]
-@inject ITokenAcquisition TokenAcquisition
 @inject Interop.CryptoInterop Crypto
-@rendermode InteractiveServer
+@using front_gestionnaire_mot_de_passe.Models
+
 
 @if (IsVisible)
 {
     <div class="modal-backdrop" @onclick="CloseModal">
         <div class="modal-content" @onclick:stopPropagation="true">
-            <h2>Ajouter une entrée</h2>
+            <h2>Modifier l'élément</h2>
 
             <div class="form-group">
                 <label>Nom d’utilisateur</label>
@@ -39,8 +35,6 @@
                 🔄  Générer un mot de passe
             </button>
             
-            
-
             <div class="form-group">
                 <label>URL</label>
                 <input id="ce-url" />
@@ -54,7 +48,7 @@
             @* <PasswordStrengthMeter Password="@_password" /> *@
 
             <div class="modal-actions">
-                <button @onclick="SubmitForm">Enregistrer</button>
+                <button @onclick="SubmitUpdateForm">Enregistrer</button>
                 <button @onclick="CloseModal">Annuler</button>
             </div>
 
@@ -69,13 +63,34 @@
 @code {
     [Parameter] public bool IsVisible { get; set; }
     [Parameter] public EventCallback OnClose { get; set; }
-    [Parameter] public EventCallback OnCreated { get; set; }
-    [Parameter] public int VaultId { get; set; }
-
-    private bool _tokenPushed;
-    private string? _error;
+    [Parameter] public EventCallback OnUpdated { get; set; }
+    [Parameter] public int EntryId { get; set; }
+    [Parameter] public VaultEntry? Entry { get; set; }
     
+    private string? _error;
     private bool _showPassword;
+    private bool _hasFilled;
+    private bool _prevVisible;
+
+    protected override void OnParametersSet()
+    {
+        if (IsVisible && !_prevVisible)
+        {
+            _hasFilled = false;
+        }
+        _prevVisible = IsVisible;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (IsVisible && !_hasFilled && Entry != null)
+        {
+            _hasFilled = true;
+            // Petit délai pour s'assurer que le DOM est prêt si nécessaire, 
+            // mais OnAfterRenderAsync devrait suffire.
+            await Crypto.FillUpdateModalAsync(Entry.VaultId, Entry);
+        }
+    }
 
     private void TogglePasswordVisibility()
     {
@@ -86,32 +101,26 @@
     {
         await Crypto.GenerateAndFillPasswordAsync("ce-password", 16);
     }
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
+    
+    
+    private async Task CloseModal()
     {
-        if (firstRender && !_tokenPushed)
-        {
-            var token = await TokenAcquisition.GetAccessTokenForUserAsync(new[]
-            {
-                "api://b8f83755-0f15-42f5-9a43-cedf7cc50c0a/access_as_user"
-            });
-            await Crypto.SetApiAccessTokenAsync(token);
-            _tokenPushed = true;
-        }
+        _error = null;
+        if (OnClose.HasDelegate) await OnClose.InvokeAsync();
     }
-
-    private async Task SubmitForm()
+    
+    private async Task SubmitUpdateForm()
     {
         _error = null;
 
-        if (VaultId <= 0) { _error = "VaultId manquant."; return; }
+        if (EntryId <= 0) { _error = "VaultId manquant."; return; }
 
         try
         {
-            var ok = await Crypto.CreateEntryFromModalAsync(VaultId);
+            var ok = await Crypto.UpdateEntryFromModalAsync(EntryId);
             if (ok)
             {
-                if (OnCreated.HasDelegate) await OnCreated.InvokeAsync();
+                if (OnUpdated.HasDelegate) await OnUpdated.InvokeAsync();
                 await CloseModal();
             }
             else
@@ -125,9 +134,8 @@
         }
     }
     
-    private async Task CloseModal()
-    {
-        _error = null;
-        if (OnClose.HasDelegate) await OnClose.InvokeAsync();
-    }
 }
+
+
+
+
