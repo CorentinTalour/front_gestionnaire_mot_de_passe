@@ -1,0 +1,23 @@
+
+
+<div class="dropdown">
+    <button class="dropdown-button" @onclick="ToggleDropdown">
+        Menu
+        <span class="arrow" style="transform:@(IsOpen ? "rotate(180deg)" : "rotate(0deg)")">▼</span>
+    </button>
+    @if (IsOpen)
+    {
+        <div class="dropdown-content">
+            
+        </div>
+    }
+</div>
+
+@code {
+    private bool IsOpen = false;
+
+    private void ToggleDropdown()
+    {
+        IsOpen = !IsOpen;
+    }
+}

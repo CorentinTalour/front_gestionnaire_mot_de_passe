@@ -1,3 +1,4 @@
+@using front_gestionnaire_mot_de_passe.Components.DropDownMenu
 @using front_gestionnaire_mot_de_passe.Models
 @rendermode InteractiveServer
 @inject front_gestionnaire_mot_de_passe.Interop.CryptoInterop Crypto
@@ -68,7 +69,11 @@
                     <p class="error-text">@_error</p>
                 }
             </div>
+            <div>
+                <DropDownMenu />
+            </div>
         </section>
+        
     </div>
 }
 

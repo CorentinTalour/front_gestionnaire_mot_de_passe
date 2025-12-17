@@ -121,6 +121,27 @@
             o => o.RelativePath = $"/Entry/VaultId?vaultId={id}"
         ) ?? new();
 
+        var relativePath = $"/Entry/{id}";
+        Console.WriteLine($"Appel API : {relativePath}");
+        try
+        {
+
+            
+
+            var oldEntries = await DownstreamApi.GetForUserAsync<List<VaultEntry>>(
+                "DownstreamApi",
+                o => o.RelativePath = relativePath
+            ) ?? new();
+
+            Console.WriteLine($"Nombre d'entrées récupérées : {oldEntries.Count}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erreur récupération entrées : {ex.Message}");
+        }
+        
+        
+
         StateHasChanged();
     }
 
