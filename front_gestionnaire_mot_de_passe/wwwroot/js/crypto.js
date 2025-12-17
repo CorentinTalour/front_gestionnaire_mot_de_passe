@@ -424,13 +424,13 @@ export async function updateEntryFromModal(EntryId, apiBase = "https://localhost
     }
 
     // 3) Chiffrement côté client (AAD lie chaque champ au vault + type)
-    const ns = `vault:${currentVault.id}|entry:${EntryId}`;
+    //const ns = `vault:${currentVault.id}|entry:${EntryId}`;
+    const ns = `vault:${currentVault.id}`;
     const userNameCypherObj = await makeCypherObj(username, `${ns}|field:username`);
     const passwordCypherObj = await makeCypherObj(password, `${ns}|field:password`);
     const urlCypherObj = await makeCypherObj(url, `${ns}|field:url`);
     const noteCypherObj = await makeCypherObj(notes, `${ns}|field:notes`);
-
-
+    
     const nomCypherObj = await makeCypherObj(username, `${ns}|field:name`);
 
     // Payload conforme à PostEntryObj
