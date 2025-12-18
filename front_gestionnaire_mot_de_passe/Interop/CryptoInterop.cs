@@ -89,4 +89,9 @@ public class CryptoInterop
     // ⭐ NOUVEAU :  Changement de mot de passe avec re-wrapping DEK
     public async Task<bool> ChangeVaultPasswordFromModalAsync(int vaultId, string apiBase = "https://localhost:7115")
         => await (await Mod()).InvokeAsync<bool>("changeVaultPasswordFromModal", vaultId, apiBase);
+    
+    
+    // fonction permettant d'appeler la vérification de la valeur du mot de passe 
+    public async Task InitPasswordStrengthMeterAsync(ElementReference inputRef)
+        => await (await Mod()).InvokeVoidAsync("PasswordStrengthMeter", inputRef);
 }

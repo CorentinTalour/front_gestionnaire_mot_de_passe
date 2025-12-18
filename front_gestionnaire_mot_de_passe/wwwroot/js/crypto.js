@@ -1320,3 +1320,42 @@ export async function changeVaultPasswordFromModal(vaultId, apiBase = "https://l
     alert("Mot de passe changé avec succès !");
     return true;
 }
+
+
+
+
+
+
+
+
+
+//////// Fonction qui calcule la force du mot de passe ////////////
+
+export function PasswordStrengthMeter(inputElement) {
+    const input = inputElement;
+    const bar = input.nextElementSibling.querySelector(".strength-bar");
+    const text = input.nextElementSibling.querySelector(".strength-text");
+
+    if (!input || !bar || !text) return;
+
+    input.addEventListener("input", () => {
+        let score = 0;
+        const pwd = input.value;
+        if (pwd.length >= 8) score++;
+        if (/[A-Z]/.test(pwd)) score++;
+        if (/\d/.test(pwd)) score++;
+        if (/[!@#$%^&*()_\-+=<>?/{}\[\]|]/.test(pwd)) score++;
+
+        const states = [
+            ["empty", ""],
+            ["weak", "Faible"],
+            ["medium", "Medium"],
+            ["strong", "Fort"],
+            ["very-strong", "Très fort"]
+        ];
+
+        const [cls, label] = states[score];
+        bar.className = `strength-bar ${cls}`;
+        text.textContent = label;
+    });
+}

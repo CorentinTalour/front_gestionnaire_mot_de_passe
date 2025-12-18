@@ -2,11 +2,13 @@
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.Identity.Web
 @using front_gestionnaire_mot_de_passe.Components.PasswordStrengthMeter
+@using front_gestionnaire_mot_de_passe.Interop
 @using front_gestionnaire_mot_de_passe.Models
 @attribute [Authorize]
 @attribute [AuthorizeForScopes(Scopes = new[] { "api://b8f83755-0f15-42f5-9a43-cedf7cc50c0a/access_as_user" })]
 @inject ITokenAcquisition TokenAcquisition
 @inject Interop.CryptoInterop Crypto
+@inject CryptoInterop CryptoInterop;
 
 
 @if (IsVisible)
@@ -20,13 +22,21 @@
             </div>
             <div class="form-group">
                 <label>Mot de passe :</label>
-                <input type="@(_showPassword ? "text" : "password")" @bind="_vaultPassword" />
+                <input
+                    @ref="_passwordInputRef"
+                    type="@(_showPassword ? "text" : "password")"
+                    @bind="_vaultPassword" />
                 <button class="show_password_button"  @onclick="TogglePasswordVisibility">
                     @(_showPassword ? "🙈" : "👁️")
                 </button>
             </div>
             <div>
-                <PasswordStrengthMeter Password="@_vaultPassword" />
+                <!--<PasswordStrengthMeter Password="@_vaultPassword" /> -->
+                
+                <div class="password-strength-container">
+                    <div class="strength-bar"></div>
+                    <p class="strength-text"></p>
+                </div>
             </div>
             <div class="modal-actions">
                 <button @onclick="SubmitForm">Créer</button>
@@ -37,16 +47,20 @@
 }
 
 @code {
+    
     [Parameter] public bool IsVisible { get; set; } = false;
     [Parameter] public EventCallback OnClose { get; set; }
+    
     [Parameter] public EventCallback<int> OnCreated { get; set; }
-    [Parameter]
-    public Vault VaultData { get; set; } = default!;
+    [Parameter] public Vault VaultData { get; set; } = default!;
+    
+    
     
     private bool _tokenPushed;
     private string _vaultName = string.Empty;
     private string _vaultPassword = string.Empty;
     private bool _showPassword = false;
+    private ElementReference _passwordInputRef;
     
     private void TogglePasswordVisibility()
     {
@@ -65,6 +79,14 @@
             await Crypto.SetApiAccessTokenAsync(token);
             _tokenPushed = true;
         }
+        
+
+        if (firstRender)
+        {
+            // Passe le ElementReference au JS
+            await CryptoInterop.InitPasswordStrengthMeterAsync(_passwordInputRef);
+        }
+    
     }
 
     private async Task SubmitForm()
