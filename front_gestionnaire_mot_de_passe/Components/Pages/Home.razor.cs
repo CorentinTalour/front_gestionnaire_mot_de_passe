@@ -61,10 +61,10 @@ public partial class Home : ComponentBase
         ) ?? new List<Vault>();
 
         Console.WriteLine($"✅ {_vaults.Count} coffres chargés.");
-        foreach (var v in _vaults)
-        {
-            Console.WriteLine($"Id: {v.Id}, Name: {v.Name}, Salt: {v.Salt}, Password: ********, CreatedAt: {v.CreatedAt}, UpdatedAt: {v.UpdatedAt}, UserId: {v.UserId}");
-        }
+        // foreach (var v in _vaults)
+        // {
+        //     Console.WriteLine($"Id: {v.Id}, Name: {v.Name}, Salt: {v.Salt}, Password: ********, CreatedAt: {v.CreatedAt}, UpdatedAt: {v.UpdatedAt}, UserId: {v.UserId}");
+        // }
     }
 
     private void CloseVault()

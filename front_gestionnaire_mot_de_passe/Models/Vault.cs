@@ -23,5 +23,16 @@ public class Vault
 
     public int UserId { get; set; }
     [ForeignKey(nameof(UserId))]
+    
+    [NotMapped]
+    public bool IsOwner { get; set; } = false;
     public User? User { get; set; }
+}
+
+public class User
+{
+    public int Id { get; set; }
+    public string EntraId { get; set; }
+    public string Email { get; set; }
+    public DateTime CreatedAt { get; set; }
 }

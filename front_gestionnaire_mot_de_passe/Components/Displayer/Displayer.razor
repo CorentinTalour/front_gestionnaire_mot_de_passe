@@ -12,9 +12,12 @@
         </div>
     </div>
 
-    <div class="display-actions">
-        <button class="consult-btn" type="button" @onclick="ShowUpdateModal">Modifier</button>
-    </div>
+    @if (IsOwner)
+    {
+        <div class="display-actions">
+            <button class="consult-btn" type="button" @onclick="ShowUpdateModal">Modifier</button>
+        </div>
+    }
 
     <div class="display-actions">
         <button class="consult-btn" type="button" @onclick="OpenModalAsync">Consulter</button>
@@ -30,9 +33,12 @@
                     ← Retour au coffre
                 </button>
 
-                <button class="entry-back-button" type="button" @onclick="DeleteVaultEntry">
-                    Supprimer l'élément
-                </button>
+                @if (IsOwner)
+                {
+                    <button class="entry-back-button" type="button" @onclick="DeleteVaultEntry">
+                        Supprimer l'élément
+                    </button>
+                }
             </div>
 
             <div class="entry-card">
@@ -101,6 +107,7 @@
 @code {
     [Parameter, EditorRequired] public VaultEntry Entry { get; set; } = default!;
     [Parameter] public int VaultId { get; set; }
+    [Parameter] public bool IsOwner { get; set; }
     [Parameter] public EventCallback OnDeleted { get; set; }
     [Parameter] public EventCallback OnUpdated { get; set; }
 
