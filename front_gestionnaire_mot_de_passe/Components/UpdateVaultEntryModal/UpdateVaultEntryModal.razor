@@ -86,9 +86,16 @@
         if (IsVisible && !_hasFilled && Entry != null)
         {
             _hasFilled = true;
-            // Petit délai pour s'assurer que le DOM est prêt si nécessaire, 
-            // mais OnAfterRenderAsync devrait suffire.
-            await Crypto.FillUpdateModalAsync(Entry.VaultId, Entry);
+            try
+            {
+                // Petit délai pour s'assurer que le DOM est prêt
+                await Task.Delay(100);
+                await Crypto.FillUpdateModalAsync(Entry.VaultId, Entry);
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Erreur lors du remplissage du modal de mise à jour: {ex.Message}");
+            }
         }
     }
 

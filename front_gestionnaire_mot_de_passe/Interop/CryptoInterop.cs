@@ -10,6 +10,8 @@ public class CryptoInterop
     private readonly IJSRuntime _js;
     private readonly NavigationManager _nav;
     private IJSObjectReference?  _mod;
+    private bool _isInitializing;
+    private TaskCompletionSource<IJSObjectReference>? _initializationTcs;
 
     public CryptoInterop(IJSRuntime js, NavigationManager nav)
     {
@@ -19,18 +21,50 @@ public class CryptoInterop
 
     private async Task<IJSObjectReference> Mod()
     {
-        var url = new Uri(new Uri(_nav.BaseUri), "js/crypto.js?v=23").ToString(); // ⭐ Incrémenté v=23
-        return _mod ??= await _js.InvokeAsync<IJSObjectReference>("import", url);
+        // Si le module est déjà chargé, le retourner
+        if (_mod != null)
+            return _mod;
+
+        // Si une initialisation est en cours, attendre qu'elle se termine
+        if (_isInitializing && _initializationTcs != null)
+        {
+            return await _initializationTcs.Task;
+        }
+
+        // Démarrer l'initialisation
+        _isInitializing = true;
+        _initializationTcs = new TaskCompletionSource<IJSObjectReference>();
+
+        try
+        {
+            // Petit délai pour s'assurer que le circuit Blazor est établi
+            await Task.Delay(50);
+            
+            var url = new Uri(new Uri(_nav.BaseUri), "js/crypto.js?v=25").ToString();
+            _mod = await _js.InvokeAsync<IJSObjectReference>("import", url);
+            
+            _initializationTcs.SetResult(_mod);
+            return _mod;
+        }
+        catch (Exception ex)
+        {
+            _initializationTcs.SetException(ex);
+            throw;
+        }
+        finally
+        {
+            _isInitializing = false;
+        }
     }
     
     public async Task SetApiAccessTokenAsync(string token) =>
         await (await Mod()).InvokeVoidAsync("setApiAccessToken", token);
     
-    // ⭐ ANCIEN : Création de vault sans DEK (à garder pour compatibilité ou remplacer)
+    // ANCIEN : Création de vault sans DEK (à garder pour compatibilité ou remplacer)
     public async Task<JsonElement> CreateVaultFromModalAsync(int iterations = 600_000, string apiBase = "https://localhost:7115") =>
         await (await Mod()).InvokeAsync<JsonElement>("createVaultFromModal", iterations, apiBase);
     
-    // ⭐ NOUVEAU : Création de vault AVEC DEK
+    // NOUVEAU : Création de vault AVEC DEK
     public async Task<JsonElement> CreateVaultWithDEKAsync(int iterations = 600_000, string apiBase = "https://localhost:7115") =>
         await (await Mod()).InvokeAsync<JsonElement>("createVaultWithDEK", iterations, apiBase);
     

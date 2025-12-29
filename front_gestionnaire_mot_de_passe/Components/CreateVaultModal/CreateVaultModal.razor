@@ -80,9 +80,18 @@
         
         if (IsVisible && !_meterInitialized)
         {
-            await CryptoInterop.InitPasswordStrengthMeterAsync(_passwordInputRef);
-            Console.WriteLine(_passwordInputRef);
-            _meterInitialized = true;
+            try
+            {
+                // Petit délai pour s'assurer que le DOM est prêt
+                await Task.Delay(100);
+                await CryptoInterop.InitPasswordStrengthMeterAsync(_passwordInputRef);
+                Console.WriteLine(_passwordInputRef);
+                _meterInitialized = true;
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Erreur lors de l'initialisation du password meter: {ex.Message}");
+            }
         }
     }
 
