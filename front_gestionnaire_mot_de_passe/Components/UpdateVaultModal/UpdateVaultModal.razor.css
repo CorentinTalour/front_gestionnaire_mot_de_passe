@@ -120,3 +120,44 @@
         transform: scale(1);
     }
 }
+
+/* ==============================
+   Onglets (Informations / Mot de passe)
+   ============================== */
+
+.form-tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 1.5rem;
+}
+
+.form-tabs button {
+    flex: 1;
+    padding: 0.6rem 1rem;
+    border-radius: 8px;
+    border: 1px solid #333;
+    background-color: #222;
+    color: pink;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.25s ease;
+}
+
+/* Hover */
+.form-tabs button:hover {
+    background-color: #2a2a2a;
+}
+
+/* Onglet actif */
+.form-tabs button.active {
+    background: linear-gradient(to right, orange, hotpink);
+    color: #fff;
+    border: none;
+    box-shadow: 0 0 10px rgba(255,105,180,0.4);
+}
+
+/* Petit effet focus clavier */
+.form-tabs button:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(255,165,0,0.4);
+}
