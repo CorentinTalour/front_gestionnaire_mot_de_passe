@@ -5,6 +5,8 @@
 @inject ITokenAcquisition TokenAcquisition
 @inject Interop.CryptoInterop Crypto
 @rendermode InteractiveServer
+@using front_gestionnaire_mot_de_passe.Interop
+@inject CryptoInterop CryptoInterop;
 
 @if (IsVisible)
 {
@@ -20,16 +22,21 @@
             <div class="form-group">
                 <label>Mot de passe</label>
 
-                <div style="display:flex; gap:.5rem; align-items:center;">
+                <div >
                     <input id="ce-password"
                            type="@(_showPassword ? "text" : "password")"
                            autocomplete="new-password"
+                           @ref="_passwordInputRef"
                            style="flex:1;" />
 
                     <button class="show_password_button" type="button" @onclick="TogglePasswordVisibility">
                         @(_showPassword ? "🙈" : "👁️")
                     </button>
-
+    
+                    <div class="password-strength-container">
+                        <div class="strength-bar"></div>
+                        <p class="strength-text"></p>
+                    </div>
                     
                 </div>
                 
@@ -74,6 +81,8 @@
 
     private bool _tokenPushed;
     private string? _error;
+    private ElementReference _passwordInputRef;
+    private bool _meterInitialized;
     
     private bool _showPassword;
 
@@ -97,6 +106,13 @@
             });
             await Crypto.SetApiAccessTokenAsync(token);
             _tokenPushed = true;
+        }
+        
+        if (IsVisible && !_meterInitialized)
+        {
+            await CryptoInterop.InitPasswordStrengthMeterAsync(_passwordInputRef);
+            Console.WriteLine(_passwordInputRef);
+            _meterInitialized = true;
         }
     }
 
@@ -129,5 +145,7 @@
     {
         _error = null;
         if (OnClose.HasDelegate) await OnClose.InvokeAsync();
+        
+        _meterInitialized = false;
     }
 }

@@ -11,11 +11,9 @@
 
     <div class="vault-info">
         <p><strong>Créé le :</strong> @(VaultData != null ? VaultData.CreatedAt.ToString("dd/MM/yyyy HH:mm") : "")</p>
-        <p><strong>Par :</strong> "Utilisateur inconnu")</p>
         <p><strong>Modifié le :</strong> @(VaultData?.UpdatedAt.HasValue == true ? VaultData.UpdatedAt.Value.ToString("dd/MM/yyyy HH:mm") : "Jamais")</p>
     </div>
     
-
     <div class="vault-actions">
         <button class="consult-btn" @onclick="() => OnOpenVault.InvokeAsync(VaultData)">Consulter</button>
     </div>
