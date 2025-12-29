@@ -13,6 +13,8 @@ export { setApiAccessToken, authHeaders } from './crypto-auth.js';
 // Gestion du vault en mémoire
 export { currentVault, isVaultOpen, touchVault, lockNow, clearVaultList } from './crypto-vault-session.js';
 
+export { PasswordStrengthMeter } from "./crypto-utils.js";
+
 // Utilitaires cryptographiques
 export { 
     splitCtAndTag, 

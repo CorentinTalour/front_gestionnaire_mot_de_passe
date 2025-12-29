@@ -40,3 +40,49 @@ export function asU8(x) {
     throw new Error("Type cypher invalide: " + typeof x);
 }
 
+
+//////// Fonction qui calcule la force du mot de passe ////////////
+export function PasswordStrengthMeter(inputElement) {
+    const input = inputElement;
+
+    if (!input) return;
+
+    const container = input
+        .closest(".form-group")
+        ?.querySelector(".password-strength-container");
+
+    if (!container) return;
+
+    const bar = container.querySelector(".strength-bar");
+    const text = container.querySelector(".strength-text");
+
+    if (!bar || !text) return;
+
+    // 🔒 Protection contre les doubles listeners
+    if (input._strengthHandler) return;
+
+    input._strengthHandler = () => {
+        let score = 0;
+        const pwd = input.value;
+
+        if (pwd.length >= 8) score++;
+        if (/[A-Z]/.test(pwd)) score++;
+        if (/\d/.test(pwd)) score++;
+        if (/[!@#$%^&*()_\-+=<>?/{}\[\]|]/.test(pwd)) score++;
+
+        const states = [
+            ["empty", ""],
+            ["weak", "Faible"],
+            ["medium", "Moyen"],
+            ["strong", "Fort"],
+            ["very-strong", "Très fort"]
+        ];
+
+        const [cls, label] = states[score];
+        bar.className = `strength-bar ${cls}`;
+        text.textContent = label;
+    };
+
+    input.addEventListener("input", input._strengthHandler);
+}
+
