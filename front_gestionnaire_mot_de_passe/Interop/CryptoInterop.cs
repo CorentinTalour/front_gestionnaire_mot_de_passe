@@ -40,7 +40,7 @@ public class CryptoInterop
             // Petit délai pour s'assurer que le circuit Blazor est établi
             await Task.Delay(50);
             
-            var url = new Uri(new Uri(_nav.BaseUri), "js/crypto.js?v=25").ToString();
+            var url = new Uri(new Uri(_nav.BaseUri), "js/crypto.js?v=26").ToString();
             _mod = await _js.InvokeAsync<IJSObjectReference>("import", url);
             
             _initializationTcs.SetResult(_mod);
@@ -113,17 +113,18 @@ public class CryptoInterop
     public async Task TogglePasswordVisibilityAsync(string elementId)
         => await (await Mod()).InvokeVoidAsync("togglePasswordVisibility", elementId);
 
-    // ⭐ ANCIEN : Ouverture sans DEK (à garder pour compatibilité ou remplacer)
+    // ANCIEN : Ouverture sans DEK (à garder pour compatibilité ou remplacer)
     public async Task<bool> OpenVaultFromModalAsync(int vaultId, string inputId, string vaultSaltB64, int iterations, string apiBase = "https://localhost:7115")
         => await (await Mod()).InvokeAsync<bool>("openVaultFromModal", vaultId, inputId, vaultSaltB64, iterations, apiBase);
     
-    // ⭐ NOUVEAU : Ouverture AVEC DEK
     public async Task<bool> OpenVaultWithDEKFromModalAsync(int vaultId, string inputId, string vaultSaltB64, int iterations, string apiBase = "https://localhost:7115")
         => await (await Mod()).InvokeAsync<bool>("openVaultWithDEKFromModal", vaultId, inputId, vaultSaltB64, iterations, apiBase);
     
-    // ⭐ NOUVEAU :  Changement de mot de passe avec re-wrapping DEK
     public async Task<bool> ChangeVaultPasswordFromModalAsync(int vaultId, string apiBase = "https://localhost:7115")
         => await (await Mod()).InvokeAsync<bool>("changeVaultPasswordFromModal", vaultId, apiBase);
+    
+    public async Task<bool> FetchAndDecryptPasswordAsync(int vaultId, int entryId, string passwordId, string apiBase = "https://localhost:7115")
+        => await (await Mod()).InvokeAsync<bool>("fetchAndDecryptPassword", vaultId, entryId, passwordId, apiBase);
     
     public async Task InitPasswordStrengthMeterAsync(ElementReference inputRef)
         => await (await Mod()).InvokeVoidAsync("PasswordStrengthMeter", inputRef);

@@ -52,7 +52,7 @@
                 <div class="pwd-row">
                     <div class="pwd-left">
                         <strong>Mot de passe :</strong>
-                        <span id="@DomId("password")">••••••••</span>
+                        <span id="@DomId("password")">@(_passwordDecrypted ? "" : "Cliquez sur l'œil ou Copier")</span>
                     </div>
 
                     <div class="pwd-actions">
@@ -116,6 +116,7 @@
     private string? _error;
     private bool _isUpdateModalVisible;
     private List<VaultEntry>? _oldEntries;
+    private bool _passwordDecrypted;
 
     private readonly string _uid = Guid.NewGuid().ToString("N");
     private string DomId(string field) => $"entry-{Entry.Id}-{_uid}-{field}";
@@ -173,11 +174,12 @@
 
             try
             {
+                // Déchiffrer tous les champs SAUF le mot de passe
                 await Crypto.DecryptEntryToDomAsync(VaultId, Entry, new
                 {
                     nameId = DomId("name"),
                     usernameId = DomId("username"),
-                    passwordId = DomId("password"),
+                    passwordId = (string)null!, // Ne pas déchiffrer le mot de passe
                     urlId = DomId("url"),
                     notesId = DomId("notes")
                 });
@@ -221,12 +223,63 @@
     {
         _error = null;
         _showModal = false;
+        _passwordDecrypted = false;
+        StateHasChanged();
+    }
+
+    private async Task<bool> GetAndDecryptPasswordAsync()
+    {
+        if (_passwordDecrypted)
+        {
+            return true;
+        }
+
+        try
+        {
+            // ⚠️ SÉCURITÉ : L'appel se fait directement en JavaScript
+            // Le mot de passe chiffré est récupéré depuis l'API côté client
+            // Le déchiffrement se fait entièrement côté client
+            // Le mot de passe en clair ne transite JAMAIS côté serveur C#
+            var success = await Crypto.FetchAndDecryptPasswordAsync(
+                VaultId, 
+                Entry.Id, 
+                DomId("password"),
+                "https://localhost:7115"
+            );
+
+            if (!success)
+            {
+                _error = "Impossible de récupérer le mot de passe";
+                await InvokeAsync(StateHasChanged);
+                return false;
+            }
+
+            _passwordDecrypted = true;
+            await InvokeAsync(StateHasChanged);
+            
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _error = $"Erreur lors de la récupération du mot de passe : {ex.Message}";
+            await InvokeAsync(StateHasChanged);
+            return false;
+        }
     }
 
     private async Task CopyPasswordAsync()
     {
         try
         {
+            // Récupérer et déchiffrer le mot de passe si ce n'est pas déjà fait
+            await GetAndDecryptPasswordAsync();
+            
+            if (!_passwordDecrypted)
+            {
+                _error = "Impossible de copier le mot de passe";
+                return;
+            }
+
             await Crypto.CopyDomTextToClipboardAsync(DomId("password"));
         }
         catch (Exception ex)
@@ -250,6 +303,15 @@
     {
         try
         {
+            // Récupérer et déchiffrer le mot de passe si ce n'est pas déjà fait
+            await GetAndDecryptPasswordAsync();
+            
+            if (!_passwordDecrypted)
+            {
+                _error = "Impossible d'afficher le mot de passe";
+                return;
+            }
+
             await Crypto.TogglePasswordVisibilityAsync(DomId("password"));
         }
         catch (Exception ex)

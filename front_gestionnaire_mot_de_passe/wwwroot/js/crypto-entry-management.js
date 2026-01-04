@@ -322,3 +322,64 @@ export async function decryptEntryToDom(vaultId, entry, ids) {
     touchVault();
 }
 
+/**
+ * Récupère le mot de passe chiffré depuis l'API et le déchiffre côté client
+ * TOUT se passe côté client : le mot de passe clair ne transite JAMAIS côté serveur C#
+ * @param {number} vaultId - ID du vault
+ * @param {number} entryId - ID de l'entrée
+ * @param {string} passwordId - ID de l'élément DOM où afficher le mot de passe
+ * @param {string} apiBase - URL de base de l'API
+ * @returns {Promise<boolean>} True si réussi
+ */
+export async function fetchAndDecryptPassword(vaultId, entryId, passwordId, apiBase = "https://localhost:7115") {
+    if (!currentVault?.key) {
+        throw new Error("Vault non ouvert (clé AES absente).");
+    }
+
+    if (String(currentVault.id) !== String(vaultId)) {
+        throw new Error(`Vault ouvert = ${currentVault.id}, mais on tente de déchiffrer vaultId = ${vaultId}`);
+    }
+
+    try {
+        // Appel API pour récupérer le mot de passe chiffré
+        const res = await fetch(`${apiBase}/Entry/Password/${entryId}`, {
+            method: "GET",
+            headers: { ...authHeaders() }
+        });
+
+        if (!res.ok) {
+            const text = await res.text().catch(() => "");
+            throw new Error(`Erreur API Password: ${res.status} ${text}`);
+        }
+
+        // Récupération de l'objet CypherData
+        const passwordCypher = await res.json();
+
+        if (!passwordCypher) {
+            throw new Error("Mot de passe non trouvé");
+        }
+
+        // Déchiffrement côté client
+        const ns = `vault:${vaultId}`;
+        const c  = asU8(passwordCypher.cypher ?? passwordCypher.baseCypher);
+        const t  = asU8(passwordCypher.cypherTag ?? passwordCypher.baseCypherTag);
+        const iv = asU8(passwordCypher.cypherIv ?? passwordCypher.baseCypherIv);
+        
+        const clearPwd = await decFieldWithVaultKey(c, t, iv, `${ns}|field:password`);
+
+        // Stockage en RAM JS (pas dans le DOM)
+        storePassword(passwordId, clearPwd);
+
+        // Affichage masqué par défaut
+        const el = document.getElementById(passwordId);
+        if (el) {
+            el.textContent = maskPassword(clearPwd);
+        }
+
+        touchVault();
+        return true;
+    } catch (error) {
+        console.error("Erreur lors de la récupération du mot de passe:", error);
+        throw error;
+    }
+}
