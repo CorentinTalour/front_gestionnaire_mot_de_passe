@@ -43,7 +43,8 @@ export {
     fillUpdateModal,
     decryptVaultEntry,
     renderVaultEntries,
-    decryptEntryToDom
+    decryptEntryToDom,
+    fetchAndDecryptPassword
 } from './crypto-entry-management.js';
 
 // Outils de gestion des mots de passe

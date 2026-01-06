@@ -12,8 +12,6 @@
 @inject VaultState VaultState
 @using front_gestionnaire_mot_de_passe.Components.UpdateVaultModal
 @rendermode InteractiveServer
-@using Microsoft.AspNetCore.Components.Authorization;
-@using System.Security.Claims;
 
 
     <PageTitle>Détails du coffre</PageTitle>
@@ -99,8 +97,6 @@
 @code {
     [Parameter] public int Id { get; set; }
     private Vault? VaultData { get; set; }
-    [Inject]
-    private AuthenticationStateProvider AuthenticationStateProvider { get; set; } = null!;
    
     private bool _isModalVisible;
     private bool _isDeleteModalVisible;
@@ -112,7 +108,6 @@
     private void ShowModal()
     {
         _isModalVisible = true;
-        Console.WriteLine("ShowModal called, IsVisible=true");
     }
     
     private void HideModal() => _isModalVisible = false;
@@ -129,15 +124,19 @@
 
     protected override async Task OnInitializedAsync()
     {
-        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
-        var connectedUser = authState.User;
+        // Récupérer les coffres dont l'utilisateur est propriétaire
+        var ownedVaults = await DownstreamApi.GetForUserAsync<List<Vault>>(
+            "DownstreamApi",
+            o => o.RelativePath = "/Vault"
+        ) ?? new();
         
-        var vaults = await DownstreamApi.GetForUserAsync<List<Vault>>(
+        // Récupérer tous les coffres (propriétaire + membre)
+        var allVaults = await DownstreamApi.GetForUserAsync<List<Vault>>(
             "DownstreamApi",
             o => o.RelativePath = "/Vault/All"
         ) ?? new();
 
-        VaultData = vaults.FirstOrDefault(v => v.Id == Id);
+        VaultData = allVaults.FirstOrDefault(v => v.Id == Id);
 
         _entries = await DownstreamApi.GetForUserAsync<List<VaultEntry>>(
             "DownstreamApi",
@@ -146,14 +145,9 @@
 
         if (VaultData != null)
         {
-            VaultData.IsOwner = IsVaultOwnedByConnectedUser(VaultData, connectedUser);
+            // L'utilisateur est propriétaire si le coffre est dans la liste des coffres possédés
+            VaultData.IsOwner = ownedVaults.Any(v => v.Id == Id);
         }
-            
-        
-            // Console.WriteLine(
-            //     $"Vault: {v.Name} | VaultEmail: {v.User?.Email} | IsOwner: {v.IsOwner}"
-            // );
-
 
         StateHasChanged();
     }
@@ -178,11 +172,10 @@
         _isReopenModalVisible = false;
         StateHasChanged();
     }
-
+    
     private void ShowDeleteModal()
     {
         _isDeleteModalVisible = true;
-        Console.WriteLine("ShowModal called, IsVisible=true");
     }
 
     private void HideDeleteModal()
@@ -224,24 +217,8 @@
     
     private Task OnVaultUpdated()
     {
-        Console.WriteLine("Vault mis à jour");
         return Task.CompletedTask;
     }
-    
-    private bool IsVaultOwnedByConnectedUser(Vault vault, ClaimsPrincipal connectedUser)
-    {
-        if (vault.User == null)
-            return false;
-
-        var connectedEmail = connectedUser.Identity?.Name;
-
-        if (string.IsNullOrWhiteSpace(connectedEmail))
-            return false;
-
-        return string.Equals(
-            vault.User.Email,
-            connectedEmail,
-            StringComparison.OrdinalIgnoreCase
-        );
-    }
 }
+
+
