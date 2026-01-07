@@ -12,6 +12,9 @@
 @inject VaultState VaultState
 @using front_gestionnaire_mot_de_passe.Components.UpdateVaultModal
 @using front_gestionnaire_mot_de_passe.Components.LogsModal
+@using front_gestionnaire_mot_de_passe.Models.VaultMembers
+@using Microsoft.AspNetCore.Components.Authorization
+@inject AuthenticationStateProvider AuthenticationStateProvider
 @rendermode InteractiveServer
 
 
@@ -136,12 +139,6 @@
 
     protected override async Task OnInitializedAsync()
     {
-        // Récupérer les coffres dont l'utilisateur est propriétaire
-        var ownedVaults = await DownstreamApi.GetForUserAsync<List<Vault>>(
-            "DownstreamApi",
-            o => o.RelativePath = "/Vault"
-        ) ?? new();
-        
         // Récupérer tous les coffres (propriétaire + membre)
         var allVaults = await DownstreamApi.GetForUserAsync<List<Vault>>(
             "DownstreamApi",
@@ -157,8 +154,38 @@
 
         if (VaultData != null)
         {
-            // L'utilisateur est propriétaire si le coffre est dans la liste des coffres possédés
-            VaultData.IsOwner = ownedVaults.Any(v => v.Id == Id);
+            // Par défaut, on ne considère pas owner tant qu'on n'a pas vérifié
+            VaultData.IsOwner = false;
+            
+            try 
+            {
+                // Récupération de l'utilisateur courant pour obtenir son email/nom
+                var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+                var userPrincipal = authState.User;
+                var userEmail = userPrincipal.Identity?.Name; 
+                
+                if (!string.IsNullOrEmpty(userEmail))
+                {
+                    // Récupérer tous les utilisateurs pour trouver l'ID correspondant à notre email
+                    var users = await DownstreamApi.GetForUserAsync<List<GetUserObj>>(
+                        "DownstreamApi",
+                        o => o.RelativePath = "/Users"
+                    );
+
+                    // Trouver notre utilisateur interne
+                    var me = users?.FirstOrDefault(u => u.Email.Equals(userEmail, StringComparison.OrdinalIgnoreCase));
+                    
+                    if (me != null)
+                    {
+                        // Comparer l'ID du créateur du coffre avec notre ID
+                        VaultData.IsOwner = (VaultData.UserId == me.Id);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Erreur lors de la vérification du propriétaire : {ex.Message}");
+            }
         }
 
         StateHasChanged();
