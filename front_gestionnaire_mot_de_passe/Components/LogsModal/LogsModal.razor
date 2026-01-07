@@ -1,0 +1,76 @@
+@using front_gestionnaire_mot_de_passe.Models
+
+@if (IsVisible)
+{
+    <div class="modal-backdrop" @onclick="Close">
+        <div class="modal-content" @onclick:stopPropagation="true">
+            <h2>Logs du coffre</h2>
+            
+            @if (Logs == null)
+            {
+                <p class="loading">Chargement des logs...</p>
+            }
+            else if (Logs.Count == 0)
+            {
+                <p class="no-logs">Aucun log disponible pour ce coffre.</p>
+            }
+            else
+            {
+                <div class="logs-container">
+                    <table class="logs-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Action</th>
+                                <th>Durée</th>
+                                <th>Message</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var log in Logs.OrderByDescending(l => l.ExecutedAt))
+                            {
+                                <tr class="log-row">
+                                    <td class="log-date">@log.ExecutedAt.ToString("dd/MM/yyyy HH:mm:ss")</td>
+                                    <td class="log-url">
+                                        <span class="url-badge @GetUrlClass(log.Url)">
+                                            @log.Url
+                                        </span>
+                                    </td>
+                                    <td class="log-duration">
+                                        <span class="duration-badge">@log.Duration ms</span>
+                                    </td>
+                                    <td class="log-message">@log.Message</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            
+            <div class="modal-actions">
+                <button @onclick="Close">Fermer</button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool IsVisible { get; set; }
+    [Parameter] public List<Log>? Logs { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    private async Task Close()
+    {
+        await OnClose.InvokeAsync();
+    }
+
+    private string GetUrlClass(string url)
+    {
+        if (url.Contains("POST")) return "post";
+        if (url.Contains("GET")) return "get";
+        if (url.Contains("PUT")) return "put";
+        if (url.Contains("DELETE")) return "delete";
+        return "default";
+    }
+}
+

@@ -11,6 +11,7 @@
 @inject front_gestionnaire_mot_de_passe.Interop.CryptoInterop Crypto
 @inject VaultState VaultState
 @using front_gestionnaire_mot_de_passe.Components.UpdateVaultModal
+@using front_gestionnaire_mot_de_passe.Components.LogsModal
 @rendermode InteractiveServer
 
 
@@ -38,6 +39,10 @@
         @if (VaultData != null && VaultData.IsOwner)
         {
             <button class="menu_button_update_vault"
+                    @onclick="ShowLogsModal">
+                Logs
+            </button>
+            <button class="menu_button_update_vault"
                     @onclick="ShowUpdateVaultModal">
                 Modifier coffre
             </button>
@@ -56,6 +61,10 @@
                       VaultId="@Id"
                       OnClose="HideUpdateVaultModal"
                       OnUpdated="OnVaultUpdated" />
+
+    <LogsModal IsVisible="@_isLogsModalVisible"
+               Logs="@_logs"
+               OnClose="HideLogsModal" />
 
     @if (_isEditingMembers)
     {
@@ -97,12 +106,15 @@
 @code {
     [Parameter] public int Id { get; set; }
     private Vault? VaultData { get; set; }
+    private List<Log>? _logs { get; set; }
    
     private bool _isModalVisible;
     private bool _isDeleteModalVisible;
     private bool _isReopenModalVisible;
     private List<VaultEntry>? _entries;
     private bool _isUpdateVaultModalVisible;
+    private bool _isLogsModalVisible;
+    private bool _isEditingMembers;
 
 
     private void ShowModal()
@@ -191,6 +203,29 @@
         ) ?? new();
 
         StateHasChanged();
+    }
+
+    private async Task ShowLogsModal()
+    {
+        try
+        {
+            _logs = await DownstreamApi.GetForUserAsync<List<Log>>(
+                "DownstreamApi",
+                o => o.RelativePath = $"/Vault/GetLogVault/{Id}"
+            ) ?? new();
+            
+            _isLogsModalVisible = true;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erreur récupération logs : {ex.Message}");
+        }
+    }
+
+    private void HideLogsModal()
+    {
+        _isLogsModalVisible = false;
     }
 
     private async Task DeleteVault()

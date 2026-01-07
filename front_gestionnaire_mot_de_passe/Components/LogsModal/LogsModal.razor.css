@@ -1,0 +1,165 @@
+.modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background-color: #111;
+    color: #fff;
+    padding: 2rem;
+    border-radius: 10px;
+    width: 90%;
+    max-width: 1200px;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 0 15px rgba(255,105,180,0.3);
+}
+
+.modal-content h2 { 
+    margin-top: 0;
+    color: orange;
+    margin-bottom: 1.5rem;
+}
+
+.loading, .no-logs {
+    text-align: center;
+    padding: 2rem;
+    color: pink;
+    font-size: 1.1rem;
+}
+
+.logs-container {
+    overflow-x: auto;
+    margin-bottom: 1.5rem;
+}
+
+.logs-table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: #222;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.logs-table thead {
+    background: linear-gradient(to right, orange, pink);
+}
+
+.logs-table th {
+    padding: 1rem;
+    text-align: left;
+    font-weight: 600;
+    color: #fff;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+}
+
+.log-row {
+    border-bottom: 1px solid #333;
+    transition: background-color 0.2s ease;
+}
+
+.log-row:hover {
+    background-color: #2a2a2a;
+}
+
+.log-row td {
+    padding: 1rem;
+    color: #e0e0e0;
+}
+
+.log-date {
+    white-space: nowrap;
+    color: pink;
+    font-weight: 500;
+}
+
+.log-url {
+    white-space: nowrap;
+}
+
+.url-badge {
+    display: inline-block;
+    padding: 0.3rem 0.6rem;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.url-badge.post {
+    background-color: rgba(76, 175, 80, 0.2);
+    color: #4caf50;
+    border: 1px solid #4caf50;
+}
+
+.url-badge.get {
+    background-color: rgba(33, 150, 243, 0.2);
+    color: #2196f3;
+    border: 1px solid #2196f3;
+}
+
+.url-badge.put {
+    background-color: rgba(255, 152, 0, 0.2);
+    color: #ff9800;
+    border: 1px solid #ff9800;
+}
+
+.url-badge.delete {
+    background-color: rgba(244, 67, 54, 0.2);
+    color: #f44336;
+    border: 1px solid #f44336;
+}
+
+.url-badge.default {
+    background-color: rgba(158, 158, 158, 0.2);
+    color: #9e9e9e;
+    border: 1px solid #9e9e9e;
+}
+
+.log-duration {
+    white-space: nowrap;
+}
+
+.duration-badge {
+    display: inline-block;
+    padding: 0.3rem 0.6rem;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    background-color: rgba(255, 140, 0, 0.2);
+    color: #ff8c00;
+    border: 1px solid #ff8c00;
+}
+
+.log-message {
+    color: #d0d0d0;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 1rem;
+}
+
+.modal-actions button {
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    background-color: #333;
+    color: #fff;
+    transition: all 0.3s ease;
+}
+
+.modal-actions button:hover {
+    background: linear-gradient(to right, orange, pink);
+}
+
