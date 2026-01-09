@@ -11,10 +11,7 @@
 @inject front_gestionnaire_mot_de_passe.Interop.CryptoInterop Crypto
 @inject VaultState VaultState
 @using front_gestionnaire_mot_de_passe.Components.UpdateVaultModal
-@using front_gestionnaire_mot_de_passe.Components.LogsModal
 @using front_gestionnaire_mot_de_passe.Models.VaultMembers
-@using Microsoft.AspNetCore.Components.Authorization
-@inject AuthenticationStateProvider AuthenticationStateProvider
 @rendermode InteractiveServer
 
 
@@ -42,10 +39,6 @@
         @if (VaultData != null && VaultData.IsOwner)
         {
             <button class="menu_button_update_vault"
-                    @onclick="ShowLogsModal">
-                Logs
-            </button>
-            <button class="menu_button_update_vault"
                     @onclick="ShowUpdateVaultModal">
                 Modifier coffre
             </button>
@@ -64,10 +57,6 @@
                       VaultId="@Id"
                       OnClose="HideUpdateVaultModal"
                       OnUpdated="OnVaultUpdated" />
-
-    <LogsModal IsVisible="@_isLogsModalVisible"
-               Logs="@_logs"
-               OnClose="HideLogsModal" />
 
     @if (_isEditingMembers)
     {
@@ -109,14 +98,12 @@
 @code {
     [Parameter] public int Id { get; set; }
     private Vault? VaultData { get; set; }
-    private List<Log>? _logs { get; set; }
    
     private bool _isModalVisible;
     private bool _isDeleteModalVisible;
     private bool _isReopenModalVisible;
     private List<VaultEntry>? _entries;
     private bool _isUpdateVaultModalVisible;
-    private bool _isLogsModalVisible;
     private bool _isEditingMembers;
 
 
@@ -139,53 +126,73 @@
 
     protected override async Task OnInitializedAsync()
     {
+        // Récupérer l'ID de l'utilisateur connecté
+        int? currentUserId = null;
+        try
+        {
+            // Appel à l'API /Users/Me qui retourne directement l'utilisateur connecté
+            var me = await DownstreamApi.GetForUserAsync<GetUserObj>(
+                "DownstreamApi",
+                o => o.RelativePath = "/Users/Me"
+            );
+            
+            Console.WriteLine($"[DEBUG] Réponse de /Users/Me : {System.Text.Json.JsonSerializer.Serialize(me)}");
+            
+            if (me != null)
+            {
+                currentUserId = me.Id;
+                Console.WriteLine($"[DEBUG] ✅ Utilisateur connecté trouvé - ID: {currentUserId}, Email: {me.Email}");
+            }
+            else
+            {
+                Console.WriteLine($"[ERROR] ❌ /Users/Me n'a retourné aucun utilisateur");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[ERROR] ❌ Erreur lors de la récupération de l'utilisateur connecté : {ex.Message}");
+            Console.WriteLine($"[ERROR] Stack trace : {ex.StackTrace}");
+        }
+        
         // Récupérer tous les coffres (propriétaire + membre)
         var allVaults = await DownstreamApi.GetForUserAsync<List<Vault>>(
             "DownstreamApi",
             o => o.RelativePath = "/Vault/All"
         ) ?? new();
+        
+        Console.WriteLine($"[DEBUG] Nombre de coffres récupérés : {allVaults.Count}");
 
         VaultData = allVaults.FirstOrDefault(v => v.Id == Id);
+        
+        if (VaultData != null)
+        {
+            Console.WriteLine($"[DEBUG] 📦 Coffre trouvé - ID: {VaultData.Id}, Nom: {VaultData.Name}, UserId (propriétaire): {VaultData.UserId}");
+        }
+        else
+        {
+            Console.WriteLine($"[ERROR] ❌ Aucun coffre trouvé avec l'ID {Id}");
+        }
 
         _entries = await DownstreamApi.GetForUserAsync<List<VaultEntry>>(
             "DownstreamApi",
             o => o.RelativePath = $"/Entry/VaultId?vaultId={Id}"
         ) ?? new();
 
-        if (VaultData != null)
+        if (VaultData != null && currentUserId.HasValue)
         {
-            // Par défaut, on ne considère pas owner tant qu'on n'a pas vérifié
-            VaultData.IsOwner = false;
+            // Comparer l'ID du créateur du coffre avec l'ID de l'utilisateur connecté
+            VaultData.IsOwner = (VaultData.UserId == currentUserId.Value);
             
-            try 
-            {
-                // Récupération de l'utilisateur courant pour obtenir son email/nom
-                var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
-                var userPrincipal = authState.User;
-                var userEmail = userPrincipal.Identity?.Name; 
-                
-                if (!string.IsNullOrEmpty(userEmail))
-                {
-                    // Récupérer tous les utilisateurs pour trouver l'ID correspondant à notre email
-                    var users = await DownstreamApi.GetForUserAsync<List<GetUserObj>>(
-                        "DownstreamApi",
-                        o => o.RelativePath = "/Users"
-                    );
-
-                    // Trouver notre utilisateur interne
-                    var me = users?.FirstOrDefault(u => u.Email.Equals(userEmail, StringComparison.OrdinalIgnoreCase));
-                    
-                    if (me != null)
-                    {
-                        // Comparer l'ID du créateur du coffre avec notre ID
-                        VaultData.IsOwner = (VaultData.UserId == me.Id);
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Erreur lors de la vérification du propriétaire : {ex.Message}");
-            }
+            Console.WriteLine($"[DEBUG] 🔍 Comparaison des IDs :");
+            Console.WriteLine($"[DEBUG]    - VaultData.UserId (propriétaire du coffre) : {VaultData.UserId}");
+            Console.WriteLine($"[DEBUG]    - currentUserId (utilisateur connecté)     : {currentUserId.Value}");
+            Console.WriteLine($"[DEBUG]    - VaultData.UserId == currentUserId        : {VaultData.UserId == currentUserId.Value}");
+            Console.WriteLine($"[DEBUG] ➡️  IsOwner final : {VaultData.IsOwner}");
+        }
+        else if (VaultData != null)
+        {
+            VaultData.IsOwner = false;
+            Console.WriteLine($"[WARNING] ⚠️  Impossible de déterminer IsOwner - currentUserId est null");
         }
 
         StateHasChanged();
@@ -230,29 +237,6 @@
         ) ?? new();
 
         StateHasChanged();
-    }
-
-    private async Task ShowLogsModal()
-    {
-        try
-        {
-            _logs = await DownstreamApi.GetForUserAsync<List<Log>>(
-                "DownstreamApi",
-                o => o.RelativePath = $"/Vault/GetLogVault/{Id}"
-            ) ?? new();
-            
-            _isLogsModalVisible = true;
-            StateHasChanged();
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Erreur récupération logs : {ex.Message}");
-        }
-    }
-
-    private void HideLogsModal()
-    {
-        _isLogsModalVisible = false;
     }
 
     private async Task DeleteVault()
