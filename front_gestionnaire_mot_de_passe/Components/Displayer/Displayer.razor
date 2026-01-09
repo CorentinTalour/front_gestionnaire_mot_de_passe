@@ -227,12 +227,10 @@
         StateHasChanged();
     }
 
-    private async Task<bool> GetAndDecryptPasswordAsync()
+    private async Task GetAndDecryptPasswordAsync()
     {
         if (_passwordDecrypted)
-        {
-            return true;
-        }
+            return;
 
         try
         {
@@ -251,19 +249,16 @@
             {
                 _error = "Impossible de récupérer le mot de passe";
                 await InvokeAsync(StateHasChanged);
-                return false;
+                return;
             }
 
             _passwordDecrypted = true;
             await InvokeAsync(StateHasChanged);
-            
-            return true;
         }
         catch (Exception ex)
         {
             _error = $"Erreur lors de la récupération du mot de passe : {ex.Message}";
             await InvokeAsync(StateHasChanged);
-            return false;
         }
     }
 

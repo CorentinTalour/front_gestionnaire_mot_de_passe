@@ -4,24 +4,23 @@
 @using System.IdentityModel.Tokens.Jwt
 @inject ITokenAcquisition TokenAcquisition
 @using Microsoft.AspNetCore.Authorization
-@using Microsoft.Identity.Web
 @attribute [Authorize]
 
 <h3>Debug Token</h3>
 
-@if (audience is null)
+@if (_audience is null)
 {
     <p>Chargement du token...</p>
 }
 else
 {
-    <p><strong>Audience :</strong> @audience</p>
-    <p><strong>Scopes :</strong> @scopes</p>
+    <p><strong>Audience :</strong> @_audience</p>
+    <p><strong>Scopes :</strong> @_scopes</p>
 }
 
 @code {
-    private string? audience;
-    private string? scopes;
+    private string? _audience;
+    private string? _scopes;
 
     protected override async Task OnInitializedAsync()
     {
@@ -34,7 +33,7 @@ else
         // Décode le JWT pour vérifier les claims
         var jwt = new JwtSecurityTokenHandler().ReadJwtToken(token);
 
-        audience = string.Join(",", jwt.Audiences);
-        scopes = jwt.Claims.FirstOrDefault(c => c.Type == "scp")?.Value ?? "(aucun scope)";
+        _audience = string.Join(",", jwt.Audiences);
+        _scopes = jwt.Claims.FirstOrDefault(c => c.Type == "scp")?.Value ?? "(aucun scope)";
     }
 }

@@ -1,17 +1,19 @@
-@using api_chiffrement_csharp.EF.Tables
-@using front_gestionnaire_mot_de_passe.Components.OpenVaultModal
 @using front_gestionnaire_mot_de_passe.Models
 
 
 <div class="vault-card">
     <div class="vault-card-header">
         <img src="cle_icon.jpg" alt="Icône de clé" class="vault-key-icon"/>
-        <h3>@VaultData?.Name</h3>
+        <h3>@VaultData.Name</h3>
     </div>
 
     <div class="vault-info">
-        <p><strong>Créé le :</strong> @(VaultData != null ? VaultData.CreatedAt.ToString("dd/MM/yyyy HH:mm") : "")</p>
-        <p><strong>Modifié le :</strong> @(VaultData?.UpdatedAt.HasValue == true ? VaultData.UpdatedAt.Value.ToString("dd/MM/yyyy HH:mm") : "Jamais")</p>
+        <p><strong>Créé le :</strong> 
+            @VaultData.CreatedAt.ToString("dd/MM/yyyy HH:mm")
+        </p>
+        <p><strong>Modifié le :</strong> 
+            @(VaultData?.UpdatedAt.HasValue == true ? VaultData.UpdatedAt.Value.ToString("dd/MM/yyyy HH:mm") : "Jamais")
+        </p>
     </div>
     
     <div class="vault-actions">
@@ -23,7 +25,4 @@
     [Parameter, EditorRequired]
     public Vault VaultData { get; set; } = default!;
     [Parameter] public EventCallback<Vault> OnOpenVault { get; set; }
-
-    [Inject]
-    private NavigationManager Navigation { get; set; } = default!;
 }

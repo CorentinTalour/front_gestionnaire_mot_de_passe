@@ -1,9 +1,7 @@
-@using front_gestionnaire_mot_de_passe.Components.PasswordStrengthMeter
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.Identity.Web
 @attribute [Authorize]
 @inject ITokenAcquisition TokenAcquisition
-@inject Interop.CryptoInterop Crypto
 @rendermode InteractiveServer
 @using front_gestionnaire_mot_de_passe.Interop
 @inject CryptoInterop CryptoInterop;
@@ -93,7 +91,7 @@
     
     private async Task GeneratePassword()
     {
-        await Crypto.GenerateAndFillPasswordAsync("ce-password", 16);
+        await CryptoInterop.GenerateAndFillPasswordAsync("ce-password", 16);
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -104,7 +102,7 @@
             {
                 "api://b8f83755-0f15-42f5-9a43-cedf7cc50c0a/access_as_user"
             });
-            await Crypto.SetApiAccessTokenAsync(token);
+            await CryptoInterop.SetApiAccessTokenAsync(token);
             _tokenPushed = true;
         }
         
@@ -133,7 +131,7 @@
 
         try
         {
-            var ok = await Crypto.CreateEntryFromModalAsync(VaultId);
+            var ok = await CryptoInterop.CreateEntryFromModalAsync(VaultId);
             if (ok)
             {
                 if (OnCreated.HasDelegate) await OnCreated.InvokeAsync();

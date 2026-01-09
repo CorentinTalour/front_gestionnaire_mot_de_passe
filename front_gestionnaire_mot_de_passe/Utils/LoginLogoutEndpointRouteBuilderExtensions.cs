@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Mvc;
 
-namespace front_gestionnaire_mot_de_passe.Components.Pages;
+namespace front_gestionnaire_mot_de_passe.Utils;
 
 internal static class LoginLogoutEndpointRouteBuilderExtensions
 {
@@ -27,10 +27,8 @@ internal static class LoginLogoutEndpointRouteBuilderExtensions
     private static AuthenticationProperties GetAuthProperties(string? returnUrl) =>
         new()
         {
-            RedirectUri = returnUrl switch
-            {
-                string => new Uri(returnUrl, UriKind.Absolute).PathAndQuery,
-                null => "/",
-            }
+            RedirectUri = returnUrl is not null
+                ? new Uri(returnUrl, UriKind.Absolute).PathAndQuery
+                : "/"
         };
 }

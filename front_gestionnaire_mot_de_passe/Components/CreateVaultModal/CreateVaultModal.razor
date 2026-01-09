@@ -1,12 +1,10 @@
 @using System.Text.Json
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.Identity.Web
-@using front_gestionnaire_mot_de_passe.Components.PasswordStrengthMeter
 @using front_gestionnaire_mot_de_passe.Models
 @attribute [Authorize]
 @attribute [AuthorizeForScopes(Scopes = new[] { "api://b8f83755-0f15-42f5-9a43-cedf7cc50c0a/access_as_user" })]
 @inject ITokenAcquisition TokenAcquisition
-@inject Interop.CryptoInterop Crypto
 @using front_gestionnaire_mot_de_passe.Interop
 @inject CryptoInterop CryptoInterop;
 
@@ -48,7 +46,7 @@
 }
 
 @code {
-    [Parameter] public bool IsVisible { get; set; } = false;
+    [Parameter] public bool IsVisible { get; set; }
     [Parameter] public EventCallback OnClose { get; set; }
     [Parameter] public EventCallback<int> OnCreated { get; set; }
     [Parameter] public Vault VaultData { get; set; } = default!;
@@ -56,7 +54,7 @@
     private bool _tokenPushed;
     private string _vaultName = string.Empty;
     private string _vaultPassword = string.Empty;
-    private bool _showPassword = false;
+    private bool _showPassword;
     private ElementReference _passwordInputRef;
     private bool _meterInitialized;
     
@@ -74,7 +72,7 @@
                 "api://b8f83755-0f15-42f5-9a43-cedf7cc50c0a/access_as_user"
             });
 
-            await Crypto.SetApiAccessTokenAsync(token);
+            await CryptoInterop.SetApiAccessTokenAsync(token);
             _tokenPushed = true;
         }
         
@@ -99,7 +97,7 @@
     {
         try
         {
-            JsonElement json = await Crypto.CreateVaultFromModalAsync(600_000, "https://localhost:7115");
+            JsonElement json = await CryptoInterop.CreateVaultFromModalAsync(600_000, "https://localhost:7115");
 
             int newId = 0;
             if (json.TryGetProperty("vaultId", out var v)) newId = v.GetInt32();

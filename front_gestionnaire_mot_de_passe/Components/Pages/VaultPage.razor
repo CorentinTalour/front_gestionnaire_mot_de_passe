@@ -1,17 +1,16 @@
 @page "/VaultPage/{id:int}"
-@inject NavigationManager Navigation
-@inject Microsoft.Identity.Abstractions.IDownstreamApi DownstreamApi
+
 @using front_gestionnaire_mot_de_passe.Components.Displayer
 @using front_gestionnaire_mot_de_passe.Components.CreateVaultEntryModal
 @using front_gestionnaire_mot_de_passe.Models
 @using front_gestionnaire_mot_de_passe.Components.DeleteVaultModal
 @using front_gestionnaire_mot_de_passe.Components.EditMembers
 @using front_gestionnaire_mot_de_passe.Components.OpenVaultModal
-@using front_gestionnaire_mot_de_passe.Services
-@inject front_gestionnaire_mot_de_passe.Interop.CryptoInterop Crypto
-@inject VaultState VaultState
 @using front_gestionnaire_mot_de_passe.Components.UpdateVaultModal
 @using front_gestionnaire_mot_de_passe.Models.VaultMembers
+@inject Microsoft.Identity.Abstractions.IDownstreamApi DownstreamApi
+@inject NavigationManager Navigation
+@inject Interop.CryptoInterop Crypto
 @rendermode InteractiveServer
 
 

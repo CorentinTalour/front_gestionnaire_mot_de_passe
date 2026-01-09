@@ -10,7 +10,7 @@ public partial class Home : ComponentBase
     private IDownstreamApi DownstreamApi { get; set; } = null!;
     
     private string _searchText = string.Empty;
-    private bool _isModalVisibleCreateVault = false;
+    private bool _isModalVisibleCreateVault;
     
     private List<Vault> _vaults = new();
 

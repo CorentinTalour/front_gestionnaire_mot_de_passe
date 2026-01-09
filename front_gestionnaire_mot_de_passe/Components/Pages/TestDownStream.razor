@@ -7,10 +7,10 @@
 
 <button class="btn btn-primary" @onclick="Register">Lancer le POST</button>
 
-<p>@status</p>
+<p>@_status</p>
 
 @code {
-    private string? status;
+    private string? _status;
 
     private async Task Register()
     {
@@ -26,15 +26,15 @@
                     // options.Headers["Content-Type"] = "application/json";
                 });
 
-            status = $"{(int)response.StatusCode} {response.ReasonPhrase}";
+            _status = $"{(int)response.StatusCode} {response.ReasonPhrase}";
         }
         catch (HttpRequestException ex)
         {
-            status = $"HTTP error: {ex.StatusCode} — {ex.Message}";
+            _status = $"HTTP error: {ex.StatusCode} — {ex.Message}";
         }
         catch (Exception ex)
         {
-            status = $"Erreur: {ex.Message}";
+            _status = $"Erreur: {ex.Message}";
         }
     }
 }
