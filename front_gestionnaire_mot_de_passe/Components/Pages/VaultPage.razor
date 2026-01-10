@@ -7,10 +7,12 @@
 @using front_gestionnaire_mot_de_passe.Components.EditMembers
 @using front_gestionnaire_mot_de_passe.Components.OpenVaultModal
 @using front_gestionnaire_mot_de_passe.Components.UpdateVaultModal
-@using front_gestionnaire_mot_de_passe.Models.VaultMembers
-@inject Microsoft.Identity.Abstractions.IDownstreamApi DownstreamApi
+@using front_gestionnaire_mot_de_passe.Services
+@inject IVaultService VaultService
+@inject IUsersService UsersService
 @inject NavigationManager Navigation
 @inject Interop.CryptoInterop Crypto
+@inject ILogger<VaultPage> Logger
 @rendermode InteractiveServer
 
 
@@ -55,7 +57,7 @@
     <UpdateVaultModal IsVisible="@_isUpdateVaultModalVisible"
                       VaultId="@Id"
                       OnClose="HideUpdateVaultModal"
-                      OnUpdated="OnVaultUpdated" />
+                      OnUpdated="ReloadEntriesAsync" />
 
     @if (_isEditingMembers)
     {
@@ -97,14 +99,12 @@
 @code {
     [Parameter] public int Id { get; set; }
     private Vault? VaultData { get; set; }
-   
+    private List<VaultEntry>? _entries;
     private bool _isModalVisible;
     private bool _isDeleteModalVisible;
     private bool _isReopenModalVisible;
-    private List<VaultEntry>? _entries;
     private bool _isUpdateVaultModalVisible;
     private bool _isEditingMembers;
-
 
     private void ShowModal()
     {
@@ -125,76 +125,24 @@
 
     protected override async Task OnInitializedAsync()
     {
-        // Récupérer l'ID de l'utilisateur connecté
-        int? currentUserId = null;
         try
         {
-            // Appel à l'API /Users/Me qui retourne directement l'utilisateur connecté
-            var me = await DownstreamApi.GetForUserAsync<GetUserObj>(
-                "DownstreamApi",
-                o => o.RelativePath = "/Users/Me"
-            );
+            var currentUser = await UsersService.GetCurrentUserAsync();
+            VaultData = await VaultService.GetVaultByIdAsync(Id, currentUser?.Id);
             
-            Console.WriteLine($"[DEBUG] Réponse de /Users/Me : {System.Text.Json.JsonSerializer.Serialize(me)}");
+            if (VaultData == null)
+            {
+                Logger.LogWarning("Coffre {VaultId} introuvable", Id);
+                return;
+            }
             
-            if (me != null)
-            {
-                currentUserId = me.Id;
-                Console.WriteLine($"[DEBUG] ✅ Utilisateur connecté trouvé - ID: {currentUserId}, Email: {me.Email}");
-            }
-            else
-            {
-                Console.WriteLine($"[ERROR] ❌ /Users/Me n'a retourné aucun utilisateur");
-            }
+            _entries = await VaultService.GetVaultEntriesAsync(Id);
+            StateHasChanged();
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[ERROR] ❌ Erreur lors de la récupération de l'utilisateur connecté : {ex.Message}");
-            Console.WriteLine($"[ERROR] Stack trace : {ex.StackTrace}");
+            Logger.LogError(ex, "Erreur lors du chargement du coffre {VaultId}", Id);
         }
-        
-        // Récupérer tous les coffres (propriétaire + membre)
-        var allVaults = await DownstreamApi.GetForUserAsync<List<Vault>>(
-            "DownstreamApi",
-            o => o.RelativePath = "/Vault/All"
-        ) ?? new();
-        
-        Console.WriteLine($"[DEBUG] Nombre de coffres récupérés : {allVaults.Count}");
-
-        VaultData = allVaults.FirstOrDefault(v => v.Id == Id);
-        
-        if (VaultData != null)
-        {
-            Console.WriteLine($"[DEBUG] 📦 Coffre trouvé - ID: {VaultData.Id}, Nom: {VaultData.Name}, UserId (propriétaire): {VaultData.UserId}");
-        }
-        else
-        {
-            Console.WriteLine($"[ERROR] ❌ Aucun coffre trouvé avec l'ID {Id}");
-        }
-
-        _entries = await DownstreamApi.GetForUserAsync<List<VaultEntry>>(
-            "DownstreamApi",
-            o => o.RelativePath = $"/Entry/VaultId?vaultId={Id}"
-        ) ?? new();
-
-        if (VaultData != null && currentUserId.HasValue)
-        {
-            // Comparer l'ID du créateur du coffre avec l'ID de l'utilisateur connecté
-            VaultData.IsOwner = (VaultData.UserId == currentUserId.Value);
-            
-            Console.WriteLine($"[DEBUG] 🔍 Comparaison des IDs :");
-            Console.WriteLine($"[DEBUG]    - VaultData.UserId (propriétaire du coffre) : {VaultData.UserId}");
-            Console.WriteLine($"[DEBUG]    - currentUserId (utilisateur connecté)     : {currentUserId.Value}");
-            Console.WriteLine($"[DEBUG]    - VaultData.UserId == currentUserId        : {VaultData.UserId == currentUserId.Value}");
-            Console.WriteLine($"[DEBUG] ➡️  IsOwner final : {VaultData.IsOwner}");
-        }
-        else if (VaultData != null)
-        {
-            VaultData.IsOwner = false;
-            Console.WriteLine($"[WARNING] ⚠️  Impossible de déterminer IsOwner - currentUserId est null");
-        }
-
-        StateHasChanged();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -230,11 +178,7 @@
 
     private async Task ReloadEntriesAsync()
     {
-        _entries = await DownstreamApi.GetForUserAsync<List<VaultEntry>>(
-            "DownstreamApi",
-            o => o.RelativePath = $"/Entry/VaultId?vaultId={Id}"
-        ) ?? new();
-
+        _entries = await VaultService.GetVaultEntriesAsync(Id);
         StateHasChanged();
     }
 
@@ -242,28 +186,14 @@
     {
         try
         {
-            await DownstreamApi.CallApiForUserAsync(
-                "DownstreamApi",
-                options =>
-                {
-                    options.HttpMethod = HttpMethod.Delete.ToString();
-                    options.RelativePath = $"/Vault/{Id}";
-                });
-
+            await VaultService.DeleteVaultAsync(Id);
             _isDeleteModalVisible = false;
-
             Navigation.NavigateTo("/");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Erreur suppression coffre : {ex.Message}");
+            Logger.LogError(ex, "Erreur lors de la suppression du coffre {VaultId}", Id);
+            // TODO: Afficher un message d'erreur à l'utilisateur
         }
     }
-    
-    private Task OnVaultUpdated()
-    {
-        return Task.CompletedTask;
-    }
 }
-
-

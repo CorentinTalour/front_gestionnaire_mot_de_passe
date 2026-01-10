@@ -34,8 +34,10 @@ builder.Services.AddAuthorization(o => o.FallbackPolicy = o.DefaultPolicy);
 builder.Services.AddCascadingAuthenticationState();
 
 builder.Services.AddScoped<CryptoInterop>();
-
 builder.Services.AddScoped<VaultState>();
+
+builder.Services.AddScoped<IVaultService, VaultService>();
+builder.Services.AddScoped<IUsersService, UsersService>();
 
 // CORS pour le dev local
 builder.Services.AddCors(opt =>
