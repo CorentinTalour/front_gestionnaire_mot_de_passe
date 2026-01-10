@@ -7,6 +7,7 @@ import { authHeaders } from './crypto-auth.js';
 import { currentVault, touchVault } from './crypto-vault-session.js';
 import { encFieldWithVaultKey, decFieldWithVaultKey, makeCypherObj } from './crypto-encryption.js';
 import { storePassword, maskPassword } from './crypto-password-tools.js';
+import { apiBaseUrl } from "./crypto-config.js";
 
 /**
  * Chiffre une entrée pour un vault ouvert (ancien flux)
@@ -38,8 +39,10 @@ export async function encryptEntryForOpenVault() {
  * @param {string} apiBase - URL de base de l'API
  * @returns {Promise<boolean>} True si création réussie
  */
-export async function createEntryFromModal(vaultId, apiBase = "https://localhost:7115") {
-    // 1) Récupération des champs DOM
+export async function createEntryFromModal(vaultId, apiBase) {
+    apiBase ??= apiBaseUrl();
+    
+    // Récupération des champs DOM
     const userEl = document.getElementById("ce-username");
     const pwdEl = document.getElementById("ce-password");
     const urlEl = document.getElementById("ce-url");
@@ -55,12 +58,12 @@ export async function createEntryFromModal(vaultId, apiBase = "https://localhost
     const url = urlEl.value ?? "";
     const notes = notesEl.value ?? "";
 
-    // 2) Vérifie que la clé de vault est bien en RAM
+    // Vérifie que la clé de vault est bien en RAM
     if (!currentVault?.key || currentVault.id == null) {
         throw new Error("Vault non ouvert : clé AES introuvable côté client.");
     }
 
-    // 3) Chiffrement côté client (AAD lie chaque champ au vault + type)
+    // Chiffrement côté client (AAD lie chaque champ au vault + type)
     const ns = `vault:${vaultId}`;
     const userNameCypherObj = await makeCypherObj(username, `${ns}|field:username`);
     const passwordCypherObj = await makeCypherObj(password, `${ns}|field:password`);
@@ -110,8 +113,10 @@ export async function createEntryFromModal(vaultId, apiBase = "https://localhost
  * @param {string} apiBase - URL de base de l'API
  * @returns {Promise<boolean>} True si modification réussie
  */
-export async function updateEntryFromModal(EntryId, apiBase = "https://localhost:7115") {
-    // 1) Récupération des champs DOM
+export async function updateEntryFromModal(EntryId, apiBase) {
+    apiBase ??= apiBaseUrl();
+
+    // Récupération des champs DOM
     const userEl = document.getElementById("ce-username");
     const pwdEl = document.getElementById("ce-password");
     const urlEl = document.getElementById("ce-url");
@@ -127,12 +132,12 @@ export async function updateEntryFromModal(EntryId, apiBase = "https://localhost
     const url = urlEl.value ?? "";
     const notes = notesEl.value ?? "";
 
-    // 2) Vérifie que la clé de vault est bien en RAM
+    // Vérifie que la clé de vault est bien en RAM
     if (!currentVault?.key || currentVault.id == null) {
         throw new Error("Vault non ouvert : clé AES introuvable côté client.");
     }
 
-    // 3) Chiffrement côté client (AAD lie chaque champ au vault + type)
+    // Chiffrement côté client (AAD lie chaque champ au vault + type)
     //const ns = `vault:${currentVault.id}|entry:${EntryId}`;
     const ns = `vault:${currentVault.id}`;
     const userNameCypherObj = await makeCypherObj(username, `${ns}|field:username`);

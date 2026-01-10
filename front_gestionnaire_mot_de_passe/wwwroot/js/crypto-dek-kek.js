@@ -7,6 +7,7 @@ import { authHeaders } from './crypto-auth.js';
 import { setCurrentVault } from './crypto-vault-session.js';
 import { splitCtAndTag, joinCtAndTag } from './crypto-encryption.js';
 import { verifyVaultPasswordServer } from './crypto-vault-management.js';
+import { apiBaseUrl } from "./crypto-config.js";
 
 /**
  * Génère une nouvelle DEK (Data Encryption Key) aléatoire
@@ -85,7 +86,9 @@ async function unwrapDEK(wrappedDekB64, ivB64, tagB64, kek) {
  * @param {string} apiBase - URL de base de l'API
  * @returns {Promise<Object>} Données du vault créé
  */
-export async function createVaultWithDEK(iterations = 600000, apiBase = "https://localhost:7115") {
+export async function createVaultWithDEK(iterations = 600000, apiBase) {
+    apiBase ??= apiBaseUrl();
+
     const root = document.querySelector(".modal-content");
     if (!root) throw new Error("Modal introuvable (.modal-content)");
 
@@ -97,11 +100,11 @@ export async function createVaultWithDEK(iterations = 600000, apiBase = "https:/
 
     if (!password) throw new Error("Mot de passe requis");
 
-    // 1️⃣ Génération du salt côté client
+    // Génération du salt côté client
     const salt = crypto.getRandomValues(new Uint8Array(32));
     const saltB64 = b64(salt);
 
-    // 2️⃣ Dérivation de la KEK depuis le mot de passe
+    // Dérivation de la KEK depuis le mot de passe
     const pwKey = await crypto.subtle.importKey(
         "raw",
         enc.encode(password),
@@ -118,13 +121,13 @@ export async function createVaultWithDEK(iterations = 600000, apiBase = "https:/
         ["encrypt", "decrypt"]
     );
 
-    // 3️⃣ Génération de la DEK (clé magique)
+    // Génération de la DEK (clé magique)
     const dek = await generateDEK();
 
-    // 4️⃣ Wrapping de la DEK avec la KEK
+    // Wrapping de la DEK avec la KEK
     const { wrappedDek, iv, tag } = await wrapDEK(dek, kek);
 
-    // 5️⃣ Appel API
+    // Appel API
     const res = await fetch(`${apiBase}/Vault`, {
         method: "POST",
         headers: { "Content-Type": "application/json", ...authHeaders() },
@@ -133,7 +136,7 @@ export async function createVaultWithDEK(iterations = 600000, apiBase = "https:/
             salt: saltB64,
             hashedPassword: password,
             NbIteration: iterations,
-            wrappedDekB64: wrappedDek,  // ⭐ Envoi de la DEK chiffrée
+            wrappedDekB64: wrappedDek,
             dekIvB64: iv,
             dekTagB64: tag
         })
@@ -163,7 +166,8 @@ export async function createVaultWithDEK(iterations = 600000, apiBase = "https:/
  * @param {string} apiBase - URL de base de l'API
  * @returns {Promise<boolean>} True si succès
  */
-export async function openVaultWithDEKFromModal(vaultId, inputId, vaultSaltB64, iterations, apiBase = "https://localhost:7115") {
+export async function openVaultWithDEKFromModal(vaultId, inputId, vaultSaltB64, iterations, apiBase) {
+    apiBase ??= apiBaseUrl();
     const el = document.getElementById(inputId);
     if (!(el instanceof HTMLInputElement)) throw new Error("Input mot de passe introuvable");
 
@@ -171,14 +175,14 @@ export async function openVaultWithDEKFromModal(vaultId, inputId, vaultSaltB64, 
     if (!password) return false;
 
     try {
-        // 1️⃣ Vérification du mot de passe
+        // Vérification du mot de passe
         const check = await verifyVaultPasswordServer(vaultId, password, apiBase);
         if (!check.ok) {
             el.value = "";
             return false;
         }
 
-        // 2️⃣ Récupération des données du vault (avec DEK wrappée)
+        // Récupération des données du vault (avec DEK wrappée)
         const vaultRes = await fetch(`${apiBase}/Vault/${vaultId}`, {
             headers: authHeaders()
         });
@@ -187,7 +191,7 @@ export async function openVaultWithDEKFromModal(vaultId, inputId, vaultSaltB64, 
 
         const vault = await vaultRes.json();
 
-        // 3️⃣ Dérivation de la KEK
+        // Dérivation de la KEK
         const pwKey = await crypto.subtle.importKey(
             "raw",
             enc.encode(password),
@@ -204,7 +208,7 @@ export async function openVaultWithDEKFromModal(vaultId, inputId, vaultSaltB64, 
             ["encrypt", "decrypt"]
         );
 
-        // 4️⃣ Unwrap de la DEK
+        // Unwrap de la DEK
         const dek = await unwrapDEK(
             vault.wrappedDekB64,
             vault.dekIvB64,
@@ -212,7 +216,7 @@ export async function openVaultWithDEKFromModal(vaultId, inputId, vaultSaltB64, 
             kek
         );
 
-        // 5️⃣ Stockage de la DEK en mémoire (pas la KEK !)
+        // Stockage de la DEK en mémoire (pas la KEK !)
         setCurrentVault(vaultId, dek);
 
         el.value = "";
@@ -233,9 +237,10 @@ export async function openVaultWithDEKFromModal(vaultId, inputId, vaultSaltB64, 
  * @param {string} apiBase - URL de base de l'API
  * @returns {Promise<{ok: boolean, error?: string}>}
  */
-export async function changeVaultPassword(vaultId, oldPassword, newPassword, apiBase = "https://localhost:7115") {
-
-    // 1️⃣ Récupération des données du vault
+export async function changeVaultPassword(vaultId, oldPassword, newPassword, apiBase) {
+    apiBase ??= apiBaseUrl();
+    
+    // Récupération des données du vault
     const vaultRes = await fetch(`${apiBase}/Vault/${vaultId}`, {
         headers: authHeaders()
     });
@@ -247,7 +252,7 @@ export async function changeVaultPassword(vaultId, oldPassword, newPassword, api
     const vault = await vaultRes.json();
     const { salt, nbIteration, wrappedDekB64, dekIvB64, dekTagB64 } = vault;
 
-    // 2️⃣ Dérivation de l'ANCIENNE KEK
+    // Dérivation de l'ANCIENNE KEK
     const oldPwKey = await crypto.subtle.importKey(
         "raw",
         enc.encode(oldPassword),
@@ -264,7 +269,7 @@ export async function changeVaultPassword(vaultId, oldPassword, newPassword, api
         ["encrypt", "decrypt"]
     );
 
-    // 3️⃣ Unwrap de la DEK avec l'ancienne KEK
+    // Unwrap de la DEK avec l'ancienne KEK
     let dek;
     try {
         dek = await unwrapDEK(wrappedDekB64, dekIvB64, dekTagB64, oldKek);
@@ -272,7 +277,7 @@ export async function changeVaultPassword(vaultId, oldPassword, newPassword, api
         return { ok: false, error: "Ancien mot de passe incorrect" };
     }
 
-    // 4️⃣ Dérivation de la NOUVELLE KEK
+    // Dérivation de la NOUVELLE KEK
     const newPwKey = await crypto.subtle.importKey(
         "raw",
         enc.encode(newPassword),
@@ -289,10 +294,10 @@ export async function changeVaultPassword(vaultId, oldPassword, newPassword, api
         ["encrypt", "decrypt"]
     );
 
-    // 5️⃣ Re-wrapping de la DEK avec la nouvelle KEK
+    // Re-wrapping de la DEK avec la nouvelle KEK
     const { wrappedDek: newWrappedDek, iv: newIv, tag: newTag } = await wrapDEK(dek, newKek);
 
-    // 6️⃣ Envoi au serveur
+    // Envoi au serveur
     const updateRes = await fetch(`${apiBase}/Vault/${vaultId}/change-password`, {
         method: "PUT",
         headers: { "Content-Type": "application/json", ...authHeaders() },
@@ -310,7 +315,7 @@ export async function changeVaultPassword(vaultId, oldPassword, newPassword, api
         return { ok: false, error: `Erreur API: ${updateRes.status} ${text}` };
     }
 
-    // 7️⃣ Mise à jour de la session en mémoire
+    // Mise à jour de la session en mémoire
     setCurrentVault(vaultId, dek);
 
     return { ok: true };
@@ -322,7 +327,9 @@ export async function changeVaultPassword(vaultId, oldPassword, newPassword, api
  * @param {string} apiBase - URL de base de l'API
  * @returns {Promise<boolean>} True si succès
  */
-export async function changeVaultPasswordFromModal(vaultId, apiBase = "https://localhost:7115") {
+export async function changeVaultPasswordFromModal(vaultId, apiBase) {
+    apiBase ??= apiBaseUrl();
+
     const oldPwdEl = document.getElementById("old-password");
     const newPwdEl = document.getElementById("new-password");
     const confirmPwdEl = document.getElementById("confirm-password");

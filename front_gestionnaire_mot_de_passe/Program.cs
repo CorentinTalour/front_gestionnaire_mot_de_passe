@@ -1,5 +1,6 @@
 using front_gestionnaire_mot_de_passe.Components;
 using front_gestionnaire_mot_de_passe.Interop;
+using front_gestionnaire_mot_de_passe.Models;
 using front_gestionnaire_mot_de_passe.Services;
 using front_gestionnaire_mot_de_passe.Utils;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
@@ -14,6 +15,9 @@ string apiEndpoint = builder.Configuration.GetValue<string>("DownstreamApi:BaseU
                      ?? throw new InvalidOperationException("API BaseUrl missing");
 string apiScope = builder.Configuration.GetValue<string>("DownstreamApi:Scopes")
                   ?? throw new InvalidOperationException("API Scope missing");
+
+// Service pour lire la configuration de l'application.
+builder.Services.AddSingleton<AppConfig>();
 
 // Authentification via EntraID et configuration de l'appel à la WebAPI via DownStreamApi.
 builder.Services

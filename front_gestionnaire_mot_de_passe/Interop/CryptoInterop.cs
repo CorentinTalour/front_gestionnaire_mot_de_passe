@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 using System.Text.Json;
+using front_gestionnaire_mot_de_passe.Services;
 
 
 namespace front_gestionnaire_mot_de_passe.Interop;
@@ -12,12 +13,17 @@ public class CryptoInterop
     private IJSObjectReference?  _mod;
     private bool _isInitializing;
     private TaskCompletionSource<IJSObjectReference>? _initializationTcs;
+    private readonly AppConfig _config;
 
-    public CryptoInterop(IJSRuntime js, NavigationManager nav)
+
+    public CryptoInterop(IJSRuntime js, NavigationManager nav, AppConfig config)
     {
         _js = js;
         _nav = nav;
+        _config = config;
     }
+    
+    private string UrlApiBase => _config.ApiUrl;
 
     private async Task<IJSObjectReference> Mod()
     {
@@ -61,14 +67,14 @@ public class CryptoInterop
         await (await Mod()).InvokeVoidAsync("setApiAccessToken", token);
     
     // ANCIEN : Création de vault sans DEK (à garder pour compatibilité ou remplacer)
-    public async Task<JsonElement> CreateVaultFromModalAsync(int iterations = 600_000, string apiBase = "https://localhost:7115") =>
-        await (await Mod()).InvokeAsync<JsonElement>("createVaultFromModal", iterations, apiBase);
+    public async Task<JsonElement> CreateVaultFromModalAsync(int iterations = 600_000) =>
+        await (await Mod()).InvokeAsync<JsonElement>("createVaultFromModal", iterations, UrlApiBase);
     
     // NOUVEAU : Création de vault AVEC DEK
-    public async Task<JsonElement> CreateVaultWithDEKAsync(int iterations = 600_000, string apiBase = "https://localhost:7115") =>
-        await (await Mod()).InvokeAsync<JsonElement>("createVaultWithDEK", iterations, apiBase);
+    public async Task<JsonElement> CreateVaultWithDEKAsync(int iterations = 600_000) =>
+        await (await Mod()).InvokeAsync<JsonElement>("createVaultWithDEK", iterations, UrlApiBase);
     
-    public async Task<JsonElement> UpdateVaultFromModalAsync(int iterations = 600_000, string apiBase = "https://localhost:7115") =>
+    public async Task<JsonElement> UpdateVaultFromModalAsync(int iterations = 600_000) =>
         await (await Mod()).InvokeAsync<JsonElement>("updateVaultFromModal");
 
     public async Task<object> OpenVaultFromInputAsync(int vaultId, string inputId, int autoLockMs = 300_000)
@@ -95,11 +101,11 @@ public class CryptoInterop
     public async Task GenerateAndFillPasswordAsync(string elementId, int length)
         => await (await Mod()).InvokeVoidAsync("generateAndFillPassword", elementId, length);
 
-    public async Task<bool> UpdateEntryFromModalAsync(int entryId, string apiBase = "https://localhost:7115")
-        => await (await Mod()).InvokeAsync<bool>("updateEntryFromModal", entryId, apiBase);
+    public async Task<bool> UpdateEntryFromModalAsync(int entryId)
+        => await (await Mod()).InvokeAsync<bool>("updateEntryFromModal", entryId, UrlApiBase);
 
-    public async Task<bool> CreateEntryFromModalAsync(int vaultId, string apiBase = "https://localhost:7115")
-        => await (await Mod()).InvokeAsync<bool>("createEntryFromModal", vaultId, apiBase);
+    public async Task<bool> CreateEntryFromModalAsync(int vaultId)
+        => await (await Mod()).InvokeAsync<bool>("createEntryFromModal", vaultId, UrlApiBase);
 
     public async Task<bool> IsVaultOpenAsync(int vaultId)
         => await (await Mod()).InvokeAsync<bool>("isVaultOpen", vaultId);
@@ -114,17 +120,17 @@ public class CryptoInterop
         => await (await Mod()).InvokeVoidAsync("togglePasswordVisibility", elementId);
 
     // ANCIEN : Ouverture sans DEK (à garder pour compatibilité ou remplacer)
-    public async Task<bool> OpenVaultFromModalAsync(int vaultId, string inputId, string vaultSaltB64, int iterations, string apiBase = "https://localhost:7115")
-        => await (await Mod()).InvokeAsync<bool>("openVaultFromModal", vaultId, inputId, vaultSaltB64, iterations, apiBase);
+    public async Task<bool> OpenVaultFromModalAsync(int vaultId, string inputId, string vaultSaltB64, int iterations)
+        => await (await Mod()).InvokeAsync<bool>("openVaultFromModal", vaultId, inputId, vaultSaltB64, iterations, UrlApiBase);
     
-    public async Task<bool> OpenVaultWithDEKFromModalAsync(int vaultId, string inputId, string vaultSaltB64, int iterations, string apiBase = "https://localhost:7115")
-        => await (await Mod()).InvokeAsync<bool>("openVaultWithDEKFromModal", vaultId, inputId, vaultSaltB64, iterations, apiBase);
+    public async Task<bool> OpenVaultWithDEKFromModalAsync(int vaultId, string inputId, string vaultSaltB64, int iterations)
+        => await (await Mod()).InvokeAsync<bool>("openVaultWithDEKFromModal", vaultId, inputId, vaultSaltB64, iterations, UrlApiBase);
     
-    public async Task<bool> ChangeVaultPasswordFromModalAsync(int vaultId, string apiBase = "https://localhost:7115")
-        => await (await Mod()).InvokeAsync<bool>("changeVaultPasswordFromModal", vaultId, apiBase);
+    public async Task<bool> ChangeVaultPasswordFromModalAsync(int vaultId)
+        => await (await Mod()).InvokeAsync<bool>("changeVaultPasswordFromModal", vaultId, UrlApiBase);
     
-    public async Task<bool> FetchAndDecryptPasswordAsync(int vaultId, int entryId, string passwordId, string apiBase = "https://localhost:7115")
-        => await (await Mod()).InvokeAsync<bool>("fetchAndDecryptPassword", vaultId, entryId, passwordId, apiBase);
+    public async Task<bool> FetchAndDecryptPasswordAsync(int vaultId, int entryId, string passwordId)
+        => await (await Mod()).InvokeAsync<bool>("fetchAndDecryptPassword", vaultId, entryId, passwordId, UrlApiBase);
     
     public async Task InitPasswordStrengthMeterAsync(ElementReference inputRef)
         => await (await Mod()).InvokeVoidAsync("PasswordStrengthMeter", inputRef);

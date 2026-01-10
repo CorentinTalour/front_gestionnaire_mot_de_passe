@@ -97,7 +97,7 @@
     {
         try
         {
-            JsonElement json = await CryptoInterop.CreateVaultFromModalAsync(600_000, "https://localhost:7115");
+            JsonElement json = await CryptoInterop.CreateVaultFromModalAsync(600_000);
 
             int newId = 0;
             if (json.TryGetProperty("vaultId", out var v)) newId = v.GetInt32();

@@ -1,8 +1,9 @@
 @using front_gestionnaire_mot_de_passe.Models
-@rendermode InteractiveServer
+@using front_gestionnaire_mot_de_passe.Components.UpdateVaultEntryModal
+@using front_gestionnaire_mot_de_passe.Services
 @inject Interop.CryptoInterop Crypto
 @inject Microsoft.Identity.Abstractions.IDownstreamApi DownstreamApi
-@using front_gestionnaire_mot_de_passe.Components.UpdateVaultEntryModal
+@rendermode InteractiveServer
 
 <div class="display-card">
     <div class="display-card-header">
@@ -241,8 +242,7 @@
             var success = await Crypto.FetchAndDecryptPasswordAsync(
                 VaultId, 
                 Entry.Id, 
-                DomId("password"),
-                "https://localhost:7115"
+                DomId("password")
             );
 
             if (!success)

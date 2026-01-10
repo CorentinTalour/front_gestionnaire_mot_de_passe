@@ -15,6 +15,8 @@ export { currentVault, isVaultOpen, touchVault, lockNow, clearVaultList } from '
 
 export { PasswordStrengthMeter } from "./crypto-utils.js";
 
+export { setApiBaseUrl } from "./crypto-config.js";
+
 // Utilitaires cryptographiques
 export { 
     splitCtAndTag, 

@@ -5,6 +5,7 @@
 import { enc, b64d } from './crypto-utils.js';
 import { authHeaders } from './crypto-auth.js';
 import { setCurrentVault, armAutoLock } from './crypto-vault-session.js';
+import { apiBaseUrl } from "./crypto-config.js";
 
 /**
  * Ouvre un vault avec vérification du mot de passe et dérivation de clé
@@ -59,7 +60,9 @@ export async function openVaultFromInput(vaultId, inputId, autoLockMs = 300000) 
  * @param {string} apiBase - URL de base de l'API
  * @returns {Promise<{ok: boolean, error?: string}>} Résultat de la vérification
  */
-export async function verifyVaultPasswordServer(vaultId, password, apiBase = "https://localhost:7115") {
+export async function verifyVaultPasswordServer(vaultId, password, apiBase) {
+    apiBase ??= apiBaseUrl();
+    
     if (!vaultId || !password) return {ok: false, error: "Champs manquants"};
 
     try {
@@ -75,7 +78,7 @@ export async function verifyVaultPasswordServer(vaultId, password, apiBase = "ht
             return {ok: false, error: `HTTP ${res.status}`};
         }
 
-        const json = await res.json();               // <-- { ok: true/false }
+        const json = await res.json(); // { ok: true/false }
         return json && json.ok ? {ok: true} : {ok: false, error: "Mot de passe incorrect"};
     } catch (e) {
         console.error("Erreur JS verifyVaultPasswordServer:", e);
@@ -120,7 +123,9 @@ export async function armVaultSession(vaultId, password, vaultSaltB64, iteration
  * @param {string} apiBase - URL de base de l'API
  * @returns {Promise<{ok: boolean, error?: string}>} Résultat de l'opération
  */
-export async function openVaultAfterVerify(vaultId, password, vaultSaltB64, iterations, apiBase = "https://localhost:7115") {
+export async function openVaultAfterVerify(vaultId, password, vaultSaltB64, iterations, apiBase) {
+    apiBase ??= apiBaseUrl();
+    
     const check = await verifyVaultPasswordServer(vaultId, password, apiBase);
     if (!check.ok) return check;
     await armVaultSession(vaultId, password, vaultSaltB64, iterations);
@@ -136,7 +141,9 @@ export async function openVaultAfterVerify(vaultId, password, vaultSaltB64, iter
  * @param {string} apiBase - URL de base de l'API
  * @returns {Promise<boolean>} True si ouverture réussie
  */
-export async function openVaultFromModal(vaultId, inputId, vaultSaltB64, iterations, apiBase = "https://localhost:7115") {
+export async function openVaultFromModal(vaultId, inputId, vaultSaltB64, iterations, apiBase) {
+    apiBase ??= apiBaseUrl();
+    
     const el = document.getElementById(inputId);
     if (!(el instanceof HTMLInputElement)) throw new Error("Input mot de passe introuvable");
 
@@ -182,7 +189,9 @@ export async function createVaultVerifierFromInput(inputId, iterations = 600000)
  * @param {string} apiBase - URL de base de l'API
  * @returns {Promise<Object>} Données du vault créé
  */
-export async function createVaultFromModal(iterations = 600000, apiBase = "https://localhost:7115") {
+export async function createVaultFromModal(iterations = 600000, apiBase) {
+    apiBase ??= apiBaseUrl();
+    
     const root = document.querySelector(".modal-content");
     if (!root) throw new Error("Modal introuvable (.modal-content)");
 
@@ -229,7 +238,9 @@ export async function createVaultFromModal(iterations = 600000, apiBase = "https
  * @param {string} apiBase - URL de base de l'API
  * @returns {Promise<Object>} Données du vault mis à jour
  */
-export async function updateVaultFromModal(apiBase = "https://localhost:7115") {
+export async function updateVaultFromModal(apiBase) {
+    apiBase ??= apiBaseUrl();
+
     const root = document.querySelector(".modal-content");
     if (!root) throw new Error("Modal introuvable (.modal-content)");
 
@@ -262,6 +273,4 @@ export async function updateVaultFromModal(apiBase = "https://localhost:7115") {
     if (vaultNameEl) vaultNameEl.value = "";
 
     return json;
-
 }
-
