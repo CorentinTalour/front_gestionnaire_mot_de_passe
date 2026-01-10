@@ -7,7 +7,6 @@ public interface IVaultService
 {
     Task<List<Vault>> GetAllVaultsAsync();
     Task<Vault?> GetVaultByIdAsync(int vaultId, int? currentUserId);
-    Task<List<VaultEntry>> GetVaultEntriesAsync(int vaultId);
     Task DeleteVaultAsync(int vaultId);
 }
 
@@ -83,24 +82,6 @@ public class VaultService : IVaultService
         }
     }
 
-    public async Task<List<VaultEntry>> GetVaultEntriesAsync(int vaultId)
-    {
-        try
-        {
-            var entries = await _api.GetForUserAsync<List<VaultEntry>>(
-                "DownstreamApi",
-                o => o.RelativePath = $"/Entry/VaultId?vaultId={vaultId}"
-            ) ?? new();
-            
-            _logger.LogInformation("Nombre d'entrées récupérées pour le coffre {VaultId} : {Count}", vaultId, entries.Count);
-            return entries;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Erreur lors de la récupération des entrées du coffre {VaultId}", vaultId);
-            return new List<VaultEntry>();
-        }
-    }
 
     public async Task DeleteVaultAsync(int vaultId)
     {

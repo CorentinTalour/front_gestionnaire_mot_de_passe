@@ -9,6 +9,7 @@
 @using front_gestionnaire_mot_de_passe.Components.UpdateVaultModal
 @using front_gestionnaire_mot_de_passe.Services
 @inject IVaultService VaultService
+@inject IEntryService EntryService
 @inject IUsersService UsersService
 @inject NavigationManager Navigation
 @inject Interop.CryptoInterop Crypto
@@ -136,7 +137,7 @@
                 return;
             }
             
-            _entries = await VaultService.GetVaultEntriesAsync(Id);
+            _entries = await EntryService.GetEntriesByVaultIdAsync(Id);
             StateHasChanged();
         }
         catch (Exception ex)
@@ -160,9 +161,11 @@
         }
     }
 
-    private void OnReopenModalClose()
+    private async Task OnReopenModalClose()
     {
         _isReopenModalVisible = false;
+        // Recharger les entrées après l'ouverture du coffre
+        await ReloadEntriesAsync();
         StateHasChanged();
     }
     
@@ -178,7 +181,7 @@
 
     private async Task ReloadEntriesAsync()
     {
-        _entries = await VaultService.GetVaultEntriesAsync(Id);
+        _entries = await EntryService.GetEntriesByVaultIdAsync(Id);
         StateHasChanged();
     }
 

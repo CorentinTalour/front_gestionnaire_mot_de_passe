@@ -38,6 +38,7 @@ builder.Services.AddScoped<VaultState>();
 
 builder.Services.AddScoped<IVaultService, VaultService>();
 builder.Services.AddScoped<IUsersService, UsersService>();
+builder.Services.AddScoped<IEntryService, EntryService>();
 
 // CORS pour le dev local
 builder.Services.AddCors(opt =>

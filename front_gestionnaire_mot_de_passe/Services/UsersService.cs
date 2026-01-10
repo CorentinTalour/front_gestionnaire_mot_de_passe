@@ -11,7 +11,13 @@ public interface IUsersService
 public class UsersService : IUsersService
 {
     private readonly IDownstreamApi _api;
-    private readonly ILogger<VaultService> _logger;
+    private readonly ILogger<UsersService> _logger;
+
+    public UsersService(IDownstreamApi api, ILogger<UsersService> logger)
+    {
+        _api = api;
+        _logger = logger;
+    }
     
     public async Task<GetUserObj?> GetCurrentUserAsync()
     {

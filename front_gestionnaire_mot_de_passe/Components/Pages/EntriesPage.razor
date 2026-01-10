@@ -1,7 +1,9 @@
 @page "/EntriesPage/{id:int}"
-@using System.Text.Json
-@inject HttpClient Http
+@using front_gestionnaire_mot_de_passe.Models
+@using front_gestionnaire_mot_de_passe.Services
+@inject IEntryService EntryService
 @inject NavigationManager Navigation
+@inject ILogger<EntriesPage> Logger
 @rendermode InteractiveServer
 
 <PageTitle>Détails de l’entrée</PageTitle>
@@ -24,7 +26,10 @@ else
             <p><strong>Note :</strong> @Entry.NoteCypher</p>
             <p><strong>URL :</strong> @Entry.UrlCypher</p>
             <p><strong>Créé le :</strong> @Entry.CreatedAt.ToString("g")</p>
-            <p><strong>Mis à jour le :</strong> @Entry.UpdatedAt.ToString("g")</p>
+            @if (Entry.UpdatedAt.HasValue)
+            {
+                <p><strong>Mis à jour le :</strong> @Entry.UpdatedAt.Value.ToString("g")</p>
+            }
             <p><strong>ID du coffre :</strong> @Entry.VaultId</p>
         </div>
     </section>
@@ -33,18 +38,7 @@ else
 @code {
     [Parameter] public int id { get; set; }
 
-    public class EntryData
-    {
-        public int Id { get; set; }
-        public string NomCypher { get; set; } = "";
-        public string UserNameCypher { get; set; } = "";
-        public string PasswordCypher { get; set; } = "";
-        public string NoteCypher { get; set; } = "";
-        public string UrlCypher { get; set; } = "";
-        public DateTime CreatedAt { get; set; }
-        public DateTime UpdatedAt { get; set; }
-        public int VaultId { get; set; }
-    }
+    private EntryDisplayDto? Entry { get; set; }
     
     private void BacktoVault()
     {
@@ -52,44 +46,39 @@ else
             Navigation.NavigateTo($"/VaultPage/{Entry.VaultId}");
     }
 
-    public EntryData? Entry { get; set; }
-
     protected override async Task OnInitializedAsync()
     {
         try
         {
-            var json = await Http.GetStringAsync("data/entries.json");
-            var elements = JsonSerializer.Deserialize<List<JsonElement>>(json, new JsonSerializerOptions
+            var vaultEntry = await EntryService.GetEntryByIdAsync(id);
+            
+            if (vaultEntry != null)
             {
-                PropertyNameCaseInsensitive = true
-            });
-
-            if (elements is not null)
-            {
-                foreach (var e in elements)
+                // Convertir VaultEntry en EntryDisplayDto pour l'affichage
+                // Note: Les données chiffrées sont en byte[], il faudra les déchiffrer
+                Entry = new EntryDisplayDto
                 {
-                    if (e.GetProperty("id").GetInt32() == id)
-                    {
-                        Entry = new EntryData
-                        {
-                            Id = e.GetProperty("id").GetInt32(),
-                            UserNameCypher = e.GetProperty("userNameCypher").GetProperty("cypher").GetString() ?? "",
-                            PasswordCypher = e.GetProperty("passwordCypher").GetProperty("cypher").GetString() ?? "",
-                            NoteCypher = e.GetProperty("noteCypher").GetProperty("cypher").GetString() ?? "",
-                            UrlCypher = e.GetProperty("urlCypher").GetProperty("cypher").GetString() ?? "",
-                            NomCypher = e.GetProperty("nomCypher").GetProperty("cypher").GetString() ?? "",
-                            CreatedAt = e.GetProperty("createdAt").GetDateTime(),
-                            UpdatedAt = e.GetProperty("updatedAt").GetDateTime(),
-                            VaultId = e.GetProperty("vaultId").GetInt32()
-                        };
-                        break;
-                    }
-                }
+                    Id = vaultEntry.Id,
+                    NomCypher = System.Text.Encoding.UTF8.GetString(vaultEntry.NomCypher?.Cypher ?? Array.Empty<byte>()),
+                    UserNameCypher = System.Text.Encoding.UTF8.GetString(vaultEntry.UserNameCypher?.Cypher ?? Array.Empty<byte>()),
+                    PasswordCypher = System.Text.Encoding.UTF8.GetString(vaultEntry.PasswordCypher?.Cypher ?? Array.Empty<byte>()),
+                    NoteCypher = System.Text.Encoding.UTF8.GetString(vaultEntry.NoteCypher?.Cypher ?? Array.Empty<byte>()),
+                    UrlCypher = System.Text.Encoding.UTF8.GetString(vaultEntry.UrlCypher?.Cypher ?? Array.Empty<byte>()),
+                    CreatedAt = vaultEntry.CreatedAt,
+                    UpdatedAt = vaultEntry.UpdatedAt,
+                    VaultId = vaultEntry.VaultId
+                };
+                
+                Logger.LogInformation("Entrée {EntryId} chargée avec succès", id);
+            }
+            else
+            {
+                Logger.LogWarning("Aucune entrée trouvée avec l'ID {EntryId}", id);
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Erreur lors du chargement de l’entrée : {ex.Message}");
+            Logger.LogError(ex, "Erreur lors du chargement de l'entrée {EntryId}", id);
         }
     }
 }
