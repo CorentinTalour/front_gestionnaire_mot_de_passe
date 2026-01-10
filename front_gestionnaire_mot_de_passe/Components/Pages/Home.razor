@@ -47,8 +47,8 @@
         <OpenVaultModal 
             IsVisible="@_isOpenVaultVisible"
             VaultId="@_selectedVault.Id"
-            VaultSalt="@_selectedVault.Salt"
-            VaultIterations="@_selectedVault.NbIteration"
+            VaultSalt="@(_selectedVault.KekSaltB64 ?? _selectedVault.Salt)"
+            VaultIterations="@(_selectedVault.KekIterations ?? _selectedVault.NbIteration)"
             VaultData="@_selectedVault"
             OnClose="CloseVault"
         />

@@ -42,6 +42,14 @@ public class Vault
     [MaxLength(1000)]
     public string? DekTagB64 { get; set; }
     
+    // Paramètres PBKDF2 pour la dérivation de la KEK côté client
+    [JsonPropertyName("kekSaltB64")]
+    [MaxLength(1000)]
+    public string? KekSaltB64 { get; set; }
+    
+    [JsonPropertyName("kekIterations")]
+    public int? KekIterations { get; set; }
+    
     public DateTime CreatedAt { get; set; }
     
     public DateTime? UpdatedAt { get; set; } 

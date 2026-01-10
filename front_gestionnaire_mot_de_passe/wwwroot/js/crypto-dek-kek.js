@@ -9,6 +9,9 @@ import { splitCtAndTag, joinCtAndTag } from './crypto-encryption.js';
 import { verifyVaultPasswordServer } from './crypto-vault-management.js';
 import { apiBaseUrl } from "./crypto-config.js";
 
+// Constante pour les itérations PBKDF2 (dérivation de la KEK)
+const DEFAULT_PBKDF2_ITERATIONS = 600000;
+
 /**
  * Génère une nouvelle DEK (Data Encryption Key) aléatoire
  * @returns {Promise<CryptoKey>} Clé AES-GCM 256 bits
@@ -100,11 +103,11 @@ export async function createVaultWithDEK(iterations = 600000, apiBase) {
 
     if (!password) throw new Error("Mot de passe requis");
 
-    // Génération du salt côté client
-    const salt = crypto.getRandomValues(new Uint8Array(32));
-    const saltB64 = b64(salt);
-
-    // Dérivation de la KEK depuis le mot de passe
+    // Génération du salt côté client pour PBKDF2 (dérivation KEK)
+    const kekSalt = crypto.getRandomValues(new Uint8Array(32));
+    const kekSaltB64 = b64(kekSalt);
+    
+    // Dérivation de la KEK depuis le mot de passe avec PBKDF2
     const pwKey = await crypto.subtle.importKey(
         "raw",
         enc.encode(password),
@@ -114,7 +117,7 @@ export async function createVaultWithDEK(iterations = 600000, apiBase) {
     );
 
     const kek = await crypto.subtle.deriveKey(
-        { name: "PBKDF2", hash: "SHA-256", salt, iterations },
+        { name: "PBKDF2", hash: "SHA-256", salt: kekSalt, iterations },
         pwKey,
         { name: "AES-GCM", length: 256 },
         false,
@@ -128,17 +131,19 @@ export async function createVaultWithDEK(iterations = 600000, apiBase) {
     const { wrappedDek, iv, tag } = await wrapDEK(dek, kek);
 
     // Appel API
+    // Envoi des paramètres PBKDF2 séparés pour la KEK
     const res = await fetch(`${apiBase}/Vault`, {
         method: "POST",
         headers: { "Content-Type": "application/json", ...authHeaders() },
         body: JSON.stringify({
             name,
-            salt: saltB64,
+            salt: "",  // L'API génère son propre salt pour Argon2
             hashedPassword: password,
-            NbIteration: iterations,
             wrappedDekB64: wrappedDek,
             dekIvB64: iv,
-            dekTagB64: tag
+            dekTagB64: tag,
+            kekSaltB64: kekSaltB64,      // Salt pour PBKDF2
+            kekIterations: iterations     // Iterations pour PBKDF2
         })
     });
 
@@ -148,7 +153,7 @@ export async function createVaultWithDEK(iterations = 600000, apiBase) {
     }
 
     const json = await res.json();
-
+    
     // Nettoyage
     if (vaultNameEl) vaultNameEl.value = "";
     if (vaultPwdEl) vaultPwdEl.value = "";
@@ -250,9 +255,13 @@ export async function changeVaultPassword(vaultId, oldPassword, newPassword, api
     }
 
     const vault = await vaultRes.json();
-    const { salt, nbIteration, wrappedDekB64, dekIvB64, dekTagB64 } = vault;
+    
+    // Récupération des paramètres PBKDF2 pour la KEK
+    const kekSaltB64 = vault.kekSaltB64;
+    const kekIterations = vault.kekIterations ?? DEFAULT_PBKDF2_ITERATIONS;
+    const { wrappedDekB64, dekIvB64, dekTagB64 } = vault;
 
-    // Dérivation de l'ANCIENNE KEK
+    // Dérivation de l'ANCIENNE KEK avec le salt KEK et les iterations PBKDF2
     const oldPwKey = await crypto.subtle.importKey(
         "raw",
         enc.encode(oldPassword),
@@ -262,7 +271,7 @@ export async function changeVaultPassword(vaultId, oldPassword, newPassword, api
     );
 
     const oldKek = await crypto.subtle.deriveKey(
-        { name: "PBKDF2", hash: "SHA-256", salt: b64d(salt), iterations: nbIteration },
+        { name: "PBKDF2", hash: "SHA-256", salt: b64d(kekSaltB64), iterations: kekIterations },
         oldPwKey,
         { name: "AES-GCM", length: 256 },
         false,
@@ -274,10 +283,10 @@ export async function changeVaultPassword(vaultId, oldPassword, newPassword, api
     try {
         dek = await unwrapDEK(wrappedDekB64, dekIvB64, dekTagB64, oldKek);
     } catch (e) {
-        return { ok: false, error: "Ancien mot de passe incorrect" };
+        return { ok: false, error: "Ancien mot de passe incorrect (échec du déchiffrement local de la clé)" };
     }
 
-    // Dérivation de la NOUVELLE KEK
+    // Dérivation de la NOUVELLE KEK avec les mêmes paramètres PBKDF2
     const newPwKey = await crypto.subtle.importKey(
         "raw",
         enc.encode(newPassword),
@@ -287,7 +296,7 @@ export async function changeVaultPassword(vaultId, oldPassword, newPassword, api
     );
 
     const newKek = await crypto.subtle.deriveKey(
-        { name: "PBKDF2", hash: "SHA-256", salt: b64d(salt), iterations: nbIteration },
+        { name: "PBKDF2", hash: "SHA-256", salt: b64d(kekSaltB64), iterations: kekIterations },
         newPwKey,
         { name: "AES-GCM", length: 256 },
         false,
@@ -297,22 +306,36 @@ export async function changeVaultPassword(vaultId, oldPassword, newPassword, api
     // Re-wrapping de la DEK avec la nouvelle KEK
     const { wrappedDek: newWrappedDek, iv: newIv, tag: newTag } = await wrapDEK(dek, newKek);
 
+    // Préparation des données à envoyer
+    const requestBody = {
+        OldPassword: oldPassword,
+        NewPassword: newPassword,
+        WrappedDekB64: newWrappedDek,
+        DekIvB64: newIv,
+        DekTagB64: newTag,
+        KekSaltB64: kekSaltB64,
+        KekIterations: kekIterations
+    };
+
     // Envoi au serveur
     const updateRes = await fetch(`${apiBase}/Vault/${vaultId}/change-password`, {
         method: "PUT",
         headers: { "Content-Type": "application/json", ...authHeaders() },
-        body: JSON.stringify({
-            oldPassword,
-            newPassword,
-            wrappedDekB64: newWrappedDek,
-            dekIvB64: newIv,
-            dekTagB64: newTag
-        })
+        body: JSON.stringify(requestBody)
     });
 
     if (!updateRes.ok) {
         const text = await updateRes.text().catch(() => "");
-        return { ok: false, error: `Erreur API: ${updateRes.status} ${text}` };
+        console.error("Erreur réponse API:", updateRes.status, text);
+        
+        // Essayer de parser la réponse JSON si possible
+        try {
+            const errorData = JSON.parse(text);
+            console.error("Détails erreur:", errorData);
+            return { ok: false, error: errorData.error || `Erreur API: ${updateRes.status}` };
+        } catch {
+            return { ok: false, error: `Erreur API: ${updateRes.status} ${text}` };
+        }
     }
 
     // Mise à jour de la session en mémoire
