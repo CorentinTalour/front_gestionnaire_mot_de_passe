@@ -196,6 +196,10 @@ export async function openVaultWithDEKFromModal(vaultId, inputId, vaultSaltB64, 
 
         const vault = await vaultRes.json();
 
+        // Utilisation du kekSaltB64 du vault
+        const kekSaltToUse = vault.kekSaltB64 || vaultSaltB64;
+        const kekIterationsToUse = vault.kekIterations ?? iterations ?? DEFAULT_PBKDF2_ITERATIONS;
+
         // Dérivation de la KEK
         const pwKey = await crypto.subtle.importKey(
             "raw",
@@ -206,7 +210,7 @@ export async function openVaultWithDEKFromModal(vaultId, inputId, vaultSaltB64, 
         );
 
         const kek = await crypto.subtle.deriveKey(
-            { name: "PBKDF2", hash: "SHA-256", salt: b64d(vaultSaltB64), iterations },
+            { name: "PBKDF2", hash: "SHA-256", salt: b64d(kekSaltToUse), iterations: kekIterationsToUse },
             pwKey,
             { name: "AES-GCM", length: 256 },
             false,
@@ -245,7 +249,7 @@ export async function openVaultWithDEKFromModal(vaultId, inputId, vaultSaltB64, 
 export async function changeVaultPassword(vaultId, oldPassword, newPassword, apiBase) {
     apiBase ??= apiBaseUrl();
     
-    // Récupération des données du vault
+    // Récupération des données actuelles du vault
     const vaultRes = await fetch(`${apiBase}/Vault/${vaultId}`, {
         headers: authHeaders()
     });
@@ -306,7 +310,7 @@ export async function changeVaultPassword(vaultId, oldPassword, newPassword, api
     // Re-wrapping de la DEK avec la nouvelle KEK
     const { wrappedDek: newWrappedDek, iv: newIv, tag: newTag } = await wrapDEK(dek, newKek);
 
-    // Préparation des données à envoyer
+    // Préparation des données à envoyer à l'API
     const requestBody = {
         OldPassword: oldPassword,
         NewPassword: newPassword,
@@ -338,7 +342,7 @@ export async function changeVaultPassword(vaultId, oldPassword, newPassword, api
         }
     }
 
-    // Mise à jour de la session en mémoire
+    // Mise à jour de la session en mémoire avec la DEK déchiffrée
     setCurrentVault(vaultId, dek);
 
     return { ok: true };

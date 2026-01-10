@@ -59,7 +59,8 @@ export function touchVault() {
  * Efface la clé de la mémoire et nettoie l'interface
  */
 export function lockNow() {
-    currentVault = {id: null, key: null};
+    currentVault.id = null;
+    currentVault.key = null;
     _clearAutoLock();
     clearVaultList();
 }
@@ -86,7 +87,8 @@ export function setAutoLockDelay(ms) {
  * @param {CryptoKey} key - Clé AES du vault
  */
 export function setCurrentVault(id, key) {
-    currentVault = {id, key};
+    currentVault.id = id;
+    currentVault.key = key;
     touchVault();
 }
 

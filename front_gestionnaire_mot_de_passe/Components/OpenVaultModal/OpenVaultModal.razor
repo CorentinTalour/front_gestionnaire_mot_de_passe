@@ -77,7 +77,7 @@
 
         try
         {
-            var ok = await Crypto.OpenVaultFromModalAsync(
+            var ok = await Crypto.OpenVaultWithDEKFromModalAsync(
                 VaultId.Value,
                 // ID du champ input dans le modal
                 "vault-master-pwd",
