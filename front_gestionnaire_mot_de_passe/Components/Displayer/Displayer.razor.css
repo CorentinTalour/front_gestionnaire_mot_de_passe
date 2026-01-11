@@ -199,6 +199,57 @@
 }
 
 /* =========================
+   Historique (old entries)
+========================= */
+
+.entry-details h3 {
+    color: #ff69b4;
+    font-size: 1.6rem;
+    font-weight: 600;
+    text-shadow: 0 0 6px rgba(255, 105, 180, 0.7);
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+    padding-top: 1.5rem;
+    border-top: 2px solid rgba(255, 105, 180, 0.3);
+}
+
+.old-entry-card {
+    background-color: #1a1a1a;
+    padding: 1rem 1.5rem;
+    border-radius: 8px;
+    border: 1px solid #333;
+    margin-bottom: 1rem;
+    box-shadow: 0 0 10px rgba(255, 105, 180, 0.2);
+    transition: all 0.3s ease;
+}
+
+.old-entry-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0 15px rgba(255, 105, 180, 0.4);
+    border-color: rgba(255, 105, 180, 0.5);
+}
+
+.old-entry-card h4 {
+    color: orange;
+    font-size: 1.2rem;
+    margin: 0 0 0.8rem 0;
+    text-shadow: 0 0 4px rgba(255, 165, 0, 0.5);
+}
+
+.old-entry-card p {
+    margin: 0.5rem 0;
+    font-size: 1rem;
+    background-color: #222;
+    padding: 0.5rem 0.8rem;
+    border-radius: 6px;
+    border: 1px solid #333;
+}
+
+.old-entry-card strong {
+    color: #ff69b4;
+}
+
+/* =========================
    Responsive
 ========================= */
 
@@ -222,7 +273,19 @@
         font-size: 1.6rem;
     }
 
+    .entry-details h3 {
+        font-size: 1.4rem;
+    }
+
     .entry-details p {
         font-size: 1rem;
+    }
+
+    .old-entry-card {
+        padding: 0.8rem 1rem;
+    }
+
+    .old-entry-card h4 {
+        font-size: 1.1rem;
     }
 }

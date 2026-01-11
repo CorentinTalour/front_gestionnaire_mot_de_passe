@@ -84,17 +84,24 @@
 
             @if (_oldEntries?.Any() == true)
             {
-                <h3>Historique</h3>
+                <h3>Historique (@_oldEntries.Count version(s))</h3>
                 @foreach (var e in _oldEntries)
                 {
                     <div class="old-entry-card">
-                        <h4>Entrée #@e.Id</h4>
+                        <h4>Version modifiée le @e.ModifiedAt.ToString("g")</h4>
+                        <p><strong>Nom :</strong> <span id="entry-@e.Id-name">…</span></p>
                         <p><strong>Nom d'utilisateur :</strong> <span id="entry-@e.Id-username">…</span></p>
                         <p><strong>Mot de passe :</strong> <span id="entry-@e.Id-password">••••••••</span></p>
                         <p><strong>URL :</strong> <span id="entry-@e.Id-url">…</span></p>
                         <p><strong>Note :</strong> <span id="entry-@e.Id-notes">…</span></p>
                     </div>
                 }
+            }
+            else if (_oldEntries != null && _oldEntries.Count == 0)
+            {
+                <p style="color: #888; font-style: italic; margin-top: 1rem;">
+                    Aucun historique : cette entrée n'a jamais été modifiée.
+                </p>
             }
         </section>
     </div>
@@ -114,9 +121,10 @@
 
     private bool _showModal;
     private bool _needDecrypt;
+    private bool _needDecryptHistory; // Nouveau flag pour l'historique
     private string? _error;
     private bool _isUpdateModalVisible;
-    private List<VaultEntry>? _oldEntries;
+    private List<VaultEntryHistory>? _oldEntries;
     private bool _passwordDecrypted;
 
     private readonly string _uid = Guid.NewGuid().ToString("N");
@@ -131,13 +139,70 @@
 
         try
         {
-            _oldEntries = await DownstreamApi.GetForUserAsync<List<VaultEntry>>(
-                "DownstreamApi",
-                o => o.RelativePath = $"/Entry/{Entry.Id}"
-            ) ?? new();
+            Console.WriteLine($"Récupération de l'historique pour l'entrée {Entry.Id}...");
+            Console.WriteLine($"URL: /Entry/{Entry.Id}");
+            
+            try
+            {
+                _oldEntries = await DownstreamApi.GetForUserAsync<List<VaultEntryHistory>>(
+                    "DownstreamApi",
+                    o => o.RelativePath = $"/Entry/{Entry.Id}"
+                ) ?? new();
+                
+                Console.WriteLine($"Historique récupéré avec VaultEntryHistory : {_oldEntries.Count} version(s)");
+            }
+            catch (Exception historyEx)
+            {
+                Console.WriteLine($"Impossible de désérialiser en VaultEntryHistory : {historyEx.Message}");
+                Console.WriteLine($"Tentative avec List<VaultEntry>...");
+                
+                // Fallback: essayer avec VaultEntry
+                var oldEntriesAsVault = await DownstreamApi.GetForUserAsync<List<VaultEntry>>(
+                    "DownstreamApi",
+                    o => o.RelativePath = $"/Entry/{Entry.Id}"
+                ) ?? new();
+                
+                Console.WriteLine($"Historique récupéré avec VaultEntry : {oldEntriesAsVault.Count} version(s)");
+                
+                // Convertir VaultEntry en VaultEntryHistory
+                _oldEntries = oldEntriesAsVault.Select(ve => new VaultEntryHistory
+                {
+                    Id = ve.Id,
+                    EntryId = Entry.Id,
+                    NomCypherId = ve.NomCypherId,
+                    NomCypher = ve.NomCypher,
+                    UserNameCypherId = ve.UserNameCypherId,
+                    UserNameCypher = ve.UserNameCypher,
+                    PasswordCypherId = ve.PasswordCypherId,
+                    PasswordCypher = ve.PasswordCypher,
+                    NoteCypherId = ve.NoteCypherId,
+                    NoteCypher = ve.NoteCypher,
+                    UrlCypherId = ve.UrlCypherId,
+                    UrlCypher = ve.UrlCypher,
+                    ModifiedAt = ve.UpdatedAt ?? ve.CreatedAt
+                }).ToList();
+            }
+            
+            if (_oldEntries.Count == 0)
+            {
+                Console.WriteLine("Aucune version d'historique trouvée pour cette entrée");
+            }
+            else
+            {
+                Console.WriteLine($"Versions d'historique :");
+                foreach (var entry in _oldEntries)
+                {
+                    Console.WriteLine($"  - ID: {entry.Id}, Modifié le: {entry.ModifiedAt}");
+                }
+                
+                // Activer le déchiffrement de l'historique
+                _needDecryptHistory = true;
+            }
         }
         catch (Exception ex)
         {
+            Console.WriteLine($"Erreur lors de la récupération de l'historique : {ex.Message}");
+            Console.WriteLine($"Stack trace : {ex.StackTrace}");
             _error = ex.Message;
         }
         finally
@@ -190,30 +255,33 @@
                 _error = ex.Message;
                 await InvokeAsync(StateHasChanged);
             }
+        }
 
+        // Déchiffrer l'historique quand il est disponible
+        if (_showModal && _needDecryptHistory && _oldEntries?.Any() == true)
+        {
+            _needDecryptHistory = false;
+            
             try
             {
-                if (_oldEntries?.Any() == true)
+                Console.WriteLine($"Déchiffrement de {_oldEntries.Count} version(s) d'historique...");
+                foreach (var e in _oldEntries)
                 {
-                    foreach (var e in _oldEntries)
+                    Console.WriteLine($"Déchiffrement de la version ID: {e.Id}");
+                    await Crypto.DecryptEntryToDomAsync(VaultId, e, new
                     {
-                        await Crypto.DecryptEntryToDomAsync(VaultId, e, new
-                        {
-                            nameId = $"entry-{e.Id}-name",
-                            usernameId = $"entry-{e.Id}-username",
-                            passwordId = $"entry-{e.Id}-password",
-                            urlId = $"entry-{e.Id}-url",
-                            notesId = $"entry-{e.Id}-notes"
-                        });
-                    }
+                        nameId = $"entry-{e.Id}-name",
+                        usernameId = $"entry-{e.Id}-username",
+                        passwordId = $"entry-{e.Id}-password",
+                        urlId = $"entry-{e.Id}-url",
+                        notesId = $"entry-{e.Id}-notes"
+                    });
                 }
-                else
-                {
-                    Console.WriteLine("ya rien");
-                }
+                Console.WriteLine("Déchiffrement de l'historique terminé");
             }
             catch (Exception ex)
             {
+                Console.WriteLine($"Erreur lors du déchiffrement de l'historique : {ex.Message}");
                 _error = ex.Message;
                 await InvokeAsync(StateHasChanged);
             }

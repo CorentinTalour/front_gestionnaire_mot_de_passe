@@ -2,6 +2,7 @@
 @using front_gestionnaire_mot_de_passe.Models
 @using front_gestionnaire_mot_de_passe.Services
 @inject IEntryService EntryService
+@inject IVaultService VaultService
 @inject NavigationManager Navigation
 @inject ILogger<EntriesPage> Logger
 @rendermode InteractiveServer
@@ -18,8 +19,10 @@ else
         <button class="entry-back-button" @onclick="BacktoVault">
             ← Retour au coffre
         </button>
+        
         <div class="entry-card">
-            <h2>@Entry.NomCypher</h2>
+            <h2>Entrée actuelle</h2>
+            <h3>@Entry.NomCypher</h3>
             
             <p><strong>Nom d'utilisateur :</strong> @Entry.UserNameCypher</p>
             <p><strong>Mot de passe :</strong> @Entry.PasswordCypher</p>
@@ -32,13 +35,35 @@ else
             }
             <p><strong>ID du coffre :</strong> @Entry.VaultId</p>
         </div>
+
+        @if (History != null && History.Count > 0)
+        {
+            <div class="history-section">
+                <h2>Historique des modifications</h2>
+                @foreach (var historyEntry in History.OrderByDescending(h => h.ModifiedAt))
+                {
+                    <div class="history-card">
+                        <p><strong>Modifié le :</strong> @historyEntry.ModifiedAt.ToString("g")</p>
+                        <p><strong>Nom :</strong> @(System.Text.Encoding.UTF8.GetString(historyEntry.NomCypher?.Cypher ?? Array.Empty<byte>()))</p>
+                        <p><strong>Nom d'utilisateur :</strong> @(System.Text.Encoding.UTF8.GetString(historyEntry.UserNameCypher?.Cypher ?? Array.Empty<byte>()))</p>
+                        <p><strong>Note :</strong> @(System.Text.Encoding.UTF8.GetString(historyEntry.NoteCypher?.Cypher ?? Array.Empty<byte>()))</p>
+                        <p><strong>URL :</strong> @(System.Text.Encoding.UTF8.GetString(historyEntry.UrlCypher?.Cypher ?? Array.Empty<byte>()))</p>
+                    </div>
+                }
+            </div>
+        }
+        else if (History != null && History.Count == 0)
+        {
+            <p>Aucun historique disponible pour cette entrée.</p>
+        }
     </section>
 }
 
 @code {
-    [Parameter] public int id { get; set; }
+    [Parameter] public int Id { get; set; }
 
     private EntryDisplayDto? Entry { get; set; }
+    private List<VaultEntryHistory>? History { get; set; }
     
     private void BacktoVault()
     {
@@ -50,35 +75,50 @@ else
     {
         try
         {
-            var vaultEntry = await EntryService.GetEntryByIdAsync(id);
+            // Étape 1: Récupérer l'historique de l'entrée
+            History = await EntryService.GetEntryHistoryAsync(Id);
             
-            if (vaultEntry != null)
+            // Étape 2: Pour trouver l'entrée actuelle, on doit d'abord connaître le vaultId
+            // Solution: parcourir tous les vaults pour trouver l'entrée
+            VaultEntry? currentEntry = null;
+            
+            var vaults = await VaultService.GetAllVaultsAsync();
+            foreach (var vault in vaults)
+            {
+                var entries = await EntryService.GetEntriesByVaultIdAsync(vault.Id);
+                currentEntry = entries.FirstOrDefault(e => e.Id == Id);
+                if (currentEntry != null)
+                {
+                    break;
+                }
+            }
+            
+            if (currentEntry != null)
             {
                 // Convertir VaultEntry en EntryDisplayDto pour l'affichage
-                // Note: Les données chiffrées sont en byte[], il faudra les déchiffrer
                 Entry = new EntryDisplayDto
                 {
-                    Id = vaultEntry.Id,
-                    NomCypher = System.Text.Encoding.UTF8.GetString(vaultEntry.NomCypher?.Cypher ?? Array.Empty<byte>()),
-                    UserNameCypher = System.Text.Encoding.UTF8.GetString(vaultEntry.UserNameCypher?.Cypher ?? Array.Empty<byte>()),
-                    PasswordCypher = System.Text.Encoding.UTF8.GetString(vaultEntry.PasswordCypher?.Cypher ?? Array.Empty<byte>()),
-                    NoteCypher = System.Text.Encoding.UTF8.GetString(vaultEntry.NoteCypher?.Cypher ?? Array.Empty<byte>()),
-                    UrlCypher = System.Text.Encoding.UTF8.GetString(vaultEntry.UrlCypher?.Cypher ?? Array.Empty<byte>()),
-                    CreatedAt = vaultEntry.CreatedAt,
-                    UpdatedAt = vaultEntry.UpdatedAt,
-                    VaultId = vaultEntry.VaultId
+                    Id = currentEntry.Id,
+                    NomCypher = System.Text.Encoding.UTF8.GetString(currentEntry.NomCypher?.Cypher ?? Array.Empty<byte>()),
+                    UserNameCypher = System.Text.Encoding.UTF8.GetString(currentEntry.UserNameCypher?.Cypher ?? Array.Empty<byte>()),
+                    PasswordCypher = System.Text.Encoding.UTF8.GetString(currentEntry.PasswordCypher?.Cypher ?? Array.Empty<byte>()),
+                    NoteCypher = System.Text.Encoding.UTF8.GetString(currentEntry.NoteCypher?.Cypher ?? Array.Empty<byte>()),
+                    UrlCypher = System.Text.Encoding.UTF8.GetString(currentEntry.UrlCypher?.Cypher ?? Array.Empty<byte>()),
+                    CreatedAt = currentEntry.CreatedAt,
+                    UpdatedAt = currentEntry.UpdatedAt,
+                    VaultId = currentEntry.VaultId
                 };
                 
-                Logger.LogInformation("Entrée {EntryId} chargée avec succès", id);
+                Logger.LogInformation("Entrée {EntryId} chargée avec succès avec {HistoryCount} versions d'historique", Id, History.Count);
             }
             else
             {
-                Logger.LogWarning("Aucune entrée trouvée avec l'ID {EntryId}", id);
+                Logger.LogWarning("Aucune entrée trouvée avec l'ID {EntryId}", Id);
             }
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "Erreur lors du chargement de l'entrée {EntryId}", id);
+            Logger.LogError(ex, "Erreur lors du chargement de l'entrée {EntryId}", Id);
         }
     }
 }

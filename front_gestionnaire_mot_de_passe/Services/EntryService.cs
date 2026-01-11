@@ -7,6 +7,7 @@ public interface IEntryService
 {
     Task<VaultEntry?> GetEntryByIdAsync(int entryId);
     Task<List<VaultEntry>> GetEntriesByVaultIdAsync(int vaultId);
+    Task<List<VaultEntryHistory>> GetEntryHistoryAsync(int entryId);
 }
 
 public class EntryService : IEntryService
@@ -24,6 +25,8 @@ public class EntryService : IEntryService
     {
         try
         {
+            // Note: Cet endpoint pourrait ne pas exister côté backend
+            // Il faudrait récupérer l'entrée depuis GetEntriesByVaultIdAsync
             var entry = await _api.GetForUserAsync<VaultEntry>(
                 "DownstreamApi",
                 o => o.RelativePath = $"/Entry/{entryId}"
@@ -44,6 +47,25 @@ public class EntryService : IEntryService
         {
             _logger.LogError(ex, "Erreur lors de la récupération de l'entrée {EntryId}", entryId);
             return null;
+        }
+    }
+
+    public async Task<List<VaultEntryHistory>> GetEntryHistoryAsync(int entryId)
+    {
+        try
+        {
+            var history = await _api.GetForUserAsync<List<VaultEntryHistory>>(
+                "DownstreamApi",
+                o => o.RelativePath = $"/Entry/{entryId}"
+            ) ?? new();
+
+            _logger.LogInformation("Historique récupéré pour l'entrée {EntryId} : {Count} versions", entryId, history.Count);
+            return history;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Erreur lors de la récupération de l'historique de l'entrée {EntryId}", entryId);
+            return new List<VaultEntryHistory>();
         }
     }
 
