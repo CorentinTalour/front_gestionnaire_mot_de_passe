@@ -36,6 +36,15 @@ export function storePassword(elementId, password) {
 }
 
 /**
+ * Récupère un mot de passe du cache RAM
+ * @param {string} elementId - ID de l'élément
+ * @returns {string|null} Mot de passe en clair ou null si non trouvé
+ */
+export function retrievePassword(elementId) {
+    return _plainSecretsByElementId.get(elementId) || null;
+}
+
+/**
  * Bascule la visibilité d'un mot de passe entre clair et masqué
  * @param {string} elementId - ID de l'élément DOM contenant le mot de passe
  */

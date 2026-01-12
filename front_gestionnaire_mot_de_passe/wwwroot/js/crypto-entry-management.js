@@ -6,7 +6,7 @@ import { b64, b64d, asU8 } from './crypto-utils.js';
 import { authHeaders } from './crypto-auth.js';
 import { currentVault, touchVault } from './crypto-vault-session.js';
 import { encFieldWithVaultKey, decFieldWithVaultKey, makeCypherObj } from './crypto-encryption.js';
-import { storePassword, maskPassword } from './crypto-password-tools.js';
+import { storePassword, maskPassword, retrievePassword } from './crypto-password-tools.js';
 import { apiBaseUrl } from "./crypto-config.js";
 
 /**
@@ -336,7 +336,8 @@ export async function decryptEntryToDom(vaultId, entry, ids) {
  * @param {string} apiBase - URL de base de l'API
  * @returns {Promise<boolean>} True si réussi
  */
-export async function fetchAndDecryptPassword(vaultId, entryId, passwordId, apiBase = "https://localhost:7115") {
+export async function fetchAndDecryptPassword(vaultId, entryId, passwordId, apiBase) {
+    apiBase ??= apiBaseUrl();
     if (!currentVault?.key) {
         throw new Error("Vault non ouvert (clé AES absente).");
     }
@@ -388,3 +389,176 @@ export async function fetchAndDecryptPassword(vaultId, entryId, passwordId, apiB
         throw error;
     }
 }
+
+/**
+ * Récupère et déchiffre UN mot de passe historique spécifique à la demande
+ * @param {number} vaultId - ID du vault
+ * @param {number} entryId - ID de l'entrée principale
+ * @param {number} historyId - ID de l'entrée d'historique (VaultEntryHistory.Id)
+ * @param {number} passwordCypherId - ID du CypherData du mot de passe
+ * @param {string} apiBase - URL de base de l'API
+ * @returns {Promise<boolean>} True si réussi
+ */
+export async function fetchAndDecryptSingleHistoryPassword(vaultId, entryId, historyId, passwordCypherId, apiBase) {
+    apiBase ??= apiBaseUrl();
+    if (!currentVault?.key) {
+        throw new Error("Vault non ouvert (clé AES absente).");
+    }
+
+    if (String(currentVault.id) !== String(vaultId)) {
+        throw new Error(`Vault ouvert = ${currentVault.id}, mais on tente de déchiffrer vaultId = ${vaultId}`);
+    }
+
+    const passwordId = `entry-${historyId}-password`;
+
+    // Vérifier si déjà en cache
+    const cached = retrievePassword(passwordId);
+    if (cached) {
+        return true;
+    }
+
+    try {
+        console.log(`Récupération du mot de passe historique ID ${historyId} (CypherId=${passwordCypherId})...`);
+        
+        // Appel API pour récupérer tous les mots de passe chiffrés de l'historique
+        const res = await fetch(`${apiBase}/Entry/Password/History/${entryId}`, {
+            method: "GET",
+            headers: { ...authHeaders() }
+        });
+
+        if (!res.ok) {
+            const text = await res.text().catch(() => "");
+            throw new Error(`Erreur API Password History: ${res.status} ${text}`);
+        }
+
+        // Récupération du tableau des mots de passe chiffrés
+        const passwordCyphers = await res.json();
+
+        if (!passwordCyphers || passwordCyphers.length === 0) {
+            return false;
+        }
+
+        // Trouver le mot de passe spécifique
+        const cypherData = passwordCyphers.find(p => p.id === passwordCypherId);
+        
+        if (!cypherData) {
+            console.error(`Mot de passe CypherId=${passwordCypherId} non trouvé dans la réponse API`);
+            console.error(`IDs disponibles:`, passwordCyphers.map(p => p.id));
+            return false;
+        }
+        
+        // Déchiffrement côté client
+        const ns = `vault:${vaultId}`;
+        const c  = asU8(cypherData.cypher);
+        const t  = asU8(cypherData.cypherTag);
+        const iv = asU8(cypherData.cypherIv);
+        
+        const clearPwd = await decFieldWithVaultKey(c, t, iv, `${ns}|field:password`);
+
+        // Stockage en RAM JS
+        storePassword(passwordId, clearPwd);
+
+        // Affichage masqué par défaut
+        const el = document.getElementById(passwordId);
+        if (el) {
+            el.textContent = maskPassword(clearPwd);
+        } else {
+            console.error(`Élément ${passwordId} NOT FOUND dans le DOM`);
+        }
+
+        touchVault();
+        return true;
+    } catch (error) {
+        console.error(`Erreur lors de la récupération du mot de passe historique ID ${historyId}:`, error);
+        throw error;
+    }
+}
+
+/**
+ * Récupère et déchiffre les mots de passe de l'historique
+ * @param {number} vaultId - ID du vault
+ * @param {number} entryId - ID de l'entrée principale
+ * @param {Array} historyEntries - Tableau des entrées d'historique avec leurs IDs
+ * @param {string} apiBase - URL de base de l'API
+ * @returns {Promise<boolean>} True si réussi
+ */
+export async function fetchAndDecryptHistoryPasswords(vaultId, entryId, historyEntries, apiBase) {
+    apiBase ??= apiBaseUrl();
+    if (!currentVault?.key) {
+        throw new Error("Vault non ouvert (clé AES absente).");
+    }
+
+    if (String(currentVault.id) !== String(vaultId)) {
+        throw new Error(`Vault ouvert = ${currentVault.id}, mais on tente de déchiffrer vaultId = ${vaultId}`);
+    }
+
+    try {
+        console.log(`Récupération des mots de passe historiques pour l'entrée ${entryId}...`);
+        
+        // Appel API pour récupérer tous les mots de passe chiffrés de l'historique
+        const res = await fetch(`${apiBase}/Entry/Password/History/${entryId}`, {
+            method: "GET",
+            headers: { ...authHeaders() }
+        });
+
+        if (!res.ok) {
+            const text = await res.text().catch(() => "");
+            throw new Error(`Erreur API Password History: ${res.status} ${text}`);
+        }
+
+        // Récupération du tableau des mots de passe chiffrés
+        const passwordCyphers = await res.json();
+
+        if (!passwordCyphers || passwordCyphers.length === 0) {
+            console.log("Aucun mot de passe d'historique trouvé");
+            return true;
+        }
+        
+        // Déchiffrement de chaque mot de passe
+        const ns = `vault:${vaultId}`;
+        
+        for (const cypherData of passwordCyphers) {
+            console.log(`Traitement du mot de passe CypherId ${cypherData.id}`);
+            
+            // Trouver l'entrée d'historique correspondante via PasswordCypherId
+            const historyEntry = historyEntries.find(e => e.passwordCypherId === cypherData.id);
+            
+            if (!historyEntry) {
+                continue;
+            }
+            
+            // Utiliser l'ID de l'entrée d'historique pour le DOM
+            const passwordId = `entry-${historyEntry.id}-password`;
+            
+            try {
+                // Déchiffrement côté client
+                const c  = asU8(cypherData.cypher);
+                const t  = asU8(cypherData.cypherTag);
+                const iv = asU8(cypherData.cypherIv);
+                
+                const clearPwd = await decFieldWithVaultKey(c, t, iv, `${ns}|field:password`);
+
+                // Stockage en RAM JS
+                storePassword(passwordId, clearPwd);
+
+                // Affichage masqué par défaut
+                const el = document.getElementById(passwordId);
+                if (el) {
+                    el.textContent = maskPassword(clearPwd);
+                } else {
+                }
+                
+                console.log(`Mot de passe historique ID ${cypherData.id} déchiffré avec succès`);
+            } catch (error) {
+                console.error(`Erreur lors du déchiffrement du mot de passe historique ID ${cypherData.id}:`, error);
+            }
+        }
+
+        touchVault();
+        return true;
+    } catch (error) {
+        console.error("Erreur lors de la récupération des mots de passe historiques:", error);
+        throw error;
+    }
+}
+

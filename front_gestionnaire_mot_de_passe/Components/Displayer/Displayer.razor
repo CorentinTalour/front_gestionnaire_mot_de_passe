@@ -91,7 +91,18 @@
                         <h4>Version modifiée le @e.ModifiedAt.ToString("g")</h4>
                         <p><strong>Nom :</strong> <span id="entry-@e.Id-name">…</span></p>
                         <p><strong>Nom d'utilisateur :</strong> <span id="entry-@e.Id-username">…</span></p>
-                        <p><strong>Mot de passe :</strong> <span id="entry-@e.Id-password">••••••••</span></p>
+                        
+                        <div class="pwd-row">
+                            <div class="pwd-left">
+                                <strong>Mot de passe :</strong>
+                                <span id="entry-@e.Id-password">Cliquez sur l'œil ou Copier</span>
+                            </div>
+                            <div class="pwd-actions">
+                                <button type="button" class="toggle-btn" @onclick="() => ToggleHistoryPasswordAsync(e.Id)">👁️</button>
+                                <button type="button" class="copy-btn" @onclick="() => CopyHistoryPasswordAsync(e.Id)">Copier</button>
+                            </div>
+                        </div>
+                        
                         <p><strong>URL :</strong> <span id="entry-@e.Id-url">…</span></p>
                         <p><strong>Note :</strong> <span id="entry-@e.Id-notes">…</span></p>
                     </div>
@@ -121,11 +132,12 @@
 
     private bool _showModal;
     private bool _needDecrypt;
-    private bool _needDecryptHistory; // Nouveau flag pour l'historique
+    private bool _needDecryptHistory; // Flag pour déchiffrer les champs de l'historique (sauf passwords)
     private string? _error;
     private bool _isUpdateModalVisible;
     private List<VaultEntryHistory>? _oldEntries;
     private bool _passwordDecrypted;
+    private HashSet<int> _historyPasswordsDecrypted = new(); // Track des mots de passe historiques déchiffrés (legacy, peut être supprimé)
 
     private readonly string _uid = Guid.NewGuid().ToString("N");
     private string DomId(string field) => $"entry-{Entry.Id}-{_uid}-{field}";
@@ -136,6 +148,8 @@
         _error = null;
         _showModal = true;
         _needDecrypt = true;
+        _needDecryptHistory = false;
+        _historyPasswordsDecrypted.Clear();
 
         try
         {
@@ -268,11 +282,12 @@
                 foreach (var e in _oldEntries)
                 {
                     Console.WriteLine($"Déchiffrement de la version ID: {e.Id}");
+                    // Déchiffrer tous les champs SAUF le mot de passe
                     await Crypto.DecryptEntryToDomAsync(VaultId, e, new
                     {
                         nameId = $"entry-{e.Id}-name",
                         usernameId = $"entry-{e.Id}-username",
-                        passwordId = $"entry-{e.Id}-password",
+                        passwordId = (string)null!, // Ne pas déchiffrer le mot de passe ici
                         urlId = $"entry-{e.Id}-url",
                         notesId = $"entry-{e.Id}-notes"
                     });
@@ -293,6 +308,8 @@
         _error = null;
         _showModal = false;
         _passwordDecrypted = false;
+        _needDecryptHistory = false;
+        _historyPasswordsDecrypted.Clear();
         StateHasChanged();
     }
 
@@ -303,10 +320,6 @@
 
         try
         {
-            // ⚠️ SÉCURITÉ : L'appel se fait directement en JavaScript
-            // Le mot de passe chiffré est récupéré depuis l'API côté client
-            // Le déchiffrement se fait entièrement côté client
-            // Le mot de passe en clair ne transite JAMAIS côté serveur C#
             var success = await Crypto.FetchAndDecryptPasswordAsync(
                 VaultId, 
                 Entry.Id, 
@@ -414,4 +427,71 @@
             _error = ex.Message;
         }
     }
+
+    private async Task ToggleHistoryPasswordAsync(int historyId)
+    {
+        try
+        {
+            // Trouver l'entrée d'historique correspondante
+            var historyEntry = _oldEntries?.FirstOrDefault(e => e.Id == historyId);
+            if (historyEntry == null)
+            {
+                _error = "Entrée d'historique introuvable";
+                return;
+            }
+
+            // Récupérer et déchiffrer le mot de passe si pas encore fait
+            await Crypto.FetchAndDecryptSingleHistoryPasswordAsync(
+                VaultId, 
+                Entry.Id, 
+                historyEntry.Id, 
+                historyEntry.PasswordCypherId
+            );
+
+            // Ensuite toggle la visibilité
+            string passwordId = $"entry-{historyId}-password";
+            await Crypto.TogglePasswordVisibilityAsync(passwordId);
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task CopyHistoryPasswordAsync(int historyId)
+    {
+        try
+        {
+            // Trouver l'entrée d'historique correspondante
+            var historyEntry = _oldEntries?.FirstOrDefault(e => e.Id == historyId);
+            if (historyEntry == null)
+            {
+                _error = "Entrée d'historique introuvable";
+                return;
+            }
+
+            // Récupérer et déchiffrer le mot de passe si pas encore fait
+            await Crypto.FetchAndDecryptSingleHistoryPasswordAsync(
+                VaultId, 
+                Entry.Id, 
+                historyEntry.Id, 
+                historyEntry.PasswordCypherId
+            );
+
+            // Ensuite copier
+            string passwordId = $"entry-{historyId}-password";
+            await Crypto.CopyDomTextToClipboardAsync(passwordId);
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
 }
+
+
+
+
+

@@ -48,12 +48,16 @@ export {
     decryptVaultEntry,
     renderVaultEntries,
     decryptEntryToDom,
-    fetchAndDecryptPassword
+    fetchAndDecryptPassword,
+    fetchAndDecryptHistoryPasswords,
+    fetchAndDecryptSingleHistoryPassword
 } from './crypto-entry-management.js';
 
 // Outils de gestion des mots de passe
 export {
     maskPassword,
+    storePassword,
+    retrievePassword,
     togglePasswordVisibility,
     copyDomTextToClipboard,
     generateSecurePassword,

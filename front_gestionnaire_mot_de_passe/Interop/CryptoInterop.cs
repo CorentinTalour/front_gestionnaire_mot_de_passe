@@ -46,7 +46,7 @@ public class CryptoInterop
             // Petit délai pour s'assurer que le circuit Blazor est établi
             await Task.Delay(50);
             
-            var url = new Uri(new Uri(_nav.BaseUri), "js/crypto.js?v=40").ToString();
+            var url = new Uri(new Uri(_nav.BaseUri), "js/crypto.js?v=104").ToString();
             _mod = await _js.InvokeAsync<IJSObjectReference>("import", url);
             
             _initializationTcs.SetResult(_mod);
@@ -131,6 +131,12 @@ public class CryptoInterop
     
     public async Task<bool> FetchAndDecryptPasswordAsync(int vaultId, int entryId, string passwordId)
         => await (await Mod()).InvokeAsync<bool>("fetchAndDecryptPassword", vaultId, entryId, passwordId, UrlApiBase);
+    
+    public async Task<bool> FetchAndDecryptHistoryPasswordsAsync(int vaultId, int entryId, object historyEntries)
+        => await (await Mod()).InvokeAsync<bool>("fetchAndDecryptHistoryPasswords", vaultId, entryId, historyEntries, UrlApiBase);
+    
+    public async Task<bool> FetchAndDecryptSingleHistoryPasswordAsync(int vaultId, int entryId, int historyId, int passwordCypherId)
+        => await (await Mod()).InvokeAsync<bool>("fetchAndDecryptSingleHistoryPassword", vaultId, entryId, historyId, passwordCypherId, UrlApiBase);
     
     public async Task InitPasswordStrengthMeterAsync(ElementReference inputRef)
         => await (await Mod()).InvokeVoidAsync("PasswordStrengthMeter", inputRef);
