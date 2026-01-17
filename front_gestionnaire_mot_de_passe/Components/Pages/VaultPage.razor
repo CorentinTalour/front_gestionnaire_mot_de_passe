@@ -2,6 +2,7 @@
 
 @using front_gestionnaire_mot_de_passe.Components.Displayer
 @using front_gestionnaire_mot_de_passe.Components.CreateVaultEntryModal
+@using front_gestionnaire_mot_de_passe.Components.LogsModal
 @using front_gestionnaire_mot_de_passe.Models
 @using front_gestionnaire_mot_de_passe.Components.DeleteVaultModal
 @using front_gestionnaire_mot_de_passe.Components.EditMembers
@@ -43,6 +44,11 @@
             <button class="menu_button_update_vault"
                     @onclick="ShowUpdateVaultModal">
                 Modifier coffre
+            </button>
+            
+            <button class="menu_button_logs"
+                    @onclick="ShowLogsModal">
+                Voir les logs
             </button>
         }
         
@@ -87,6 +93,10 @@
                       OnClose="HideDeleteModal"
                       OnConfirm="DeleteVault" />
 
+<LogsModal IsVisible="@_isLogsModalVisible"
+           Logs="@_vaultLogs"
+           OnClose="HideLogsModal" />
+
 @if (_isReopenModalVisible)
 {
     <OpenVaultModal IsVisible="true"
@@ -106,19 +116,21 @@
     private bool _isReopenModalVisible;
     private bool _isUpdateVaultModalVisible;
     private bool _isEditingMembers;
+    private bool _isLogsModalVisible;
+    private List<Log>? _vaultLogs;
 
     private void ShowModal()
     {
         _isModalVisible = true;
     }
-    
+
     private void HideModal() => _isModalVisible = false;
-    
+
     private void ShowUpdateVaultModal()
     {
         _isUpdateVaultModalVisible = true;
     }
-    
+
     private void HideUpdateVaultModal()
     {
         _isUpdateVaultModalVisible = false;
@@ -130,13 +142,13 @@
         {
             var currentUser = await UsersService.GetCurrentUserAsync();
             VaultData = await VaultService.GetVaultByIdAsync(Id, currentUser?.Id);
-            
+
             if (VaultData == null)
             {
                 Logger.LogWarning("Coffre {VaultId} introuvable", Id);
                 return;
             }
-            
+
             _entries = await EntryService.GetEntriesByVaultIdAsync(Id);
             StateHasChanged();
         }
@@ -168,7 +180,7 @@
         await ReloadEntriesAsync();
         StateHasChanged();
     }
-    
+
     private void ShowDeleteModal()
     {
         _isDeleteModalVisible = true;
@@ -177,6 +189,17 @@
     private void HideDeleteModal()
     {
         _isDeleteModalVisible = false;
+    }
+
+    private async Task ShowLogsModal()
+    {
+        _vaultLogs = await VaultService.GetVaultLogsAsync(Id);
+        _isLogsModalVisible = true;
+    }
+
+    private void HideLogsModal()
+    {
+        _isLogsModalVisible = false;
     }
 
     private async Task ReloadEntriesAsync()
