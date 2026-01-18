@@ -12,8 +12,11 @@ var builder = WebApplication.CreateBuilder(args);
 // Lecture des informations de la WebAPI depuis le fichier de configuration.
 string apiEndpoint = builder.Configuration.GetValue<string>("DownstreamApi:BaseUrl")
                      ?? throw new InvalidOperationException("API BaseUrl missing");
-var scopes = builder.Configuration.GetSection("DownstreamApi:Scopes").Get<string[]>()
+string[] scopes = builder.Configuration.GetSection("DownstreamApi:Scopes").Get<string[]>()
              ?? throw new InvalidOperationException("API Scopes missing");
+
+string frontUrl = builder.Configuration.GetValue<string>("Cors:AllowedOrigins")
+                      ?? throw new InvalidOperationException("FrontUrl missing");
 
 // Service pour lire la configuration de l'application.
 builder.Services.AddSingleton<AppConfig>();
@@ -44,7 +47,7 @@ builder.Services.AddScoped<IEntryService, EntryService>();
 builder.Services.AddCors(opt =>
 {
     opt.AddPolicy("Dev", p =>
-        p.WithOrigins("https://localhost:7093")
+        p.WithOrigins(frontUrl)
             .AllowAnyHeader()
             .AllowAnyMethod());
 });
