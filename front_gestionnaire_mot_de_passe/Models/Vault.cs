@@ -11,9 +11,9 @@ public class Vault
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public int Id { get; set; }
     [MaxLength(100)]
-    public string Name { get; set; } 
+    public string? Name { get; set; } 
     [MaxLength(1000)]
-    public string Salt { get; set; } 
+    public string? Salt { get; set; } 
     public int NbIteration { get; set; }
     
     // Propriétés Argon2 supplémentaires

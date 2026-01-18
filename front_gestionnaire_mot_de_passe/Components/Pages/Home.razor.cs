@@ -15,8 +15,8 @@ public partial class Home : ComponentBase
     private List<Vault> _vaults = new();
 
     private IEnumerable<Vault> FilteredVaults =>
-        _vaults.Where(v => string.IsNullOrWhiteSpace(_searchText)
-                           || v.Name.Contains(_searchText, StringComparison.OrdinalIgnoreCase));
+        _vaults.Where(v => v.Name != null && (string.IsNullOrWhiteSpace(_searchText)
+                                              || v.Name.Contains(_searchText, StringComparison.OrdinalIgnoreCase)));
 
     private void ClearSearch() => _searchText = string.Empty;
     private void ShowModal() => _isModalVisibleCreateVault = true;

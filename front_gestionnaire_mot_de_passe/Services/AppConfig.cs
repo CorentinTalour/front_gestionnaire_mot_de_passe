@@ -1,5 +1,3 @@
-using Microsoft.Extensions.Configuration;
-
 namespace front_gestionnaire_mot_de_passe.Services;
 
 public class AppConfig

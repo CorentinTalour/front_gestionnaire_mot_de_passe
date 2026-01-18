@@ -1,5 +1,3 @@
-@using System.Text.Json
-@using front_gestionnaire_mot_de_passe.Services
 @inject Interop.CryptoInterop Crypto
 
 @if (IsVisible)
@@ -65,7 +63,7 @@
     [Parameter] public EventCallback OnUpdated { get; set; }
 
     private string _vaultName = string.Empty;
-    private int _activeTab = 0;  // 0 = Infos, 1 = Mot de passe
+    private int _activeTab;  // 0 = Infos, 1 = Mot de passe
 
     private async Task CloseModal()
     {
@@ -77,8 +75,6 @@
     {
         try
         {
-            JsonElement json = await Crypto.UpdateVaultFromModalAsync(600_000);
-
             if (OnUpdated.HasDelegate)
                 await OnUpdated.InvokeAsync(VaultId);
 
@@ -90,7 +86,6 @@
         }
     }
 
-    // ⭐ NOUVEAU : Changement de mot de passe
     private async Task SubmitChangePasswordForm()
     {
         try
