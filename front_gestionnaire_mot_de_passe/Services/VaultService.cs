@@ -159,6 +159,7 @@ public class VaultService : IVaultService
         {
             Id = dto.Id,
             Url = dto.Url,
+            Message = dto.Message,
             Duration = dto.Duration,
             ExecutedAt = dto.ExecutedAt,
             EntraId = dto.EntraId,
