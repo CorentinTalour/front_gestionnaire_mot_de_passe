@@ -3,6 +3,7 @@
 @using front_gestionnaire_mot_de_passe.Services
 @inject Interop.CryptoInterop Crypto
 @inject Microsoft.Identity.Abstractions.IDownstreamApi DownstreamApi
+@inject IEntryService EntryService
 @rendermode InteractiveServer
 
 <div class="display-card">
@@ -135,9 +136,8 @@
     private bool _needDecryptHistory; // Flag pour déchiffrer les champs de l'historique (sauf passwords)
     private string? _error;
     private bool _isUpdateModalVisible;
-    private List<VaultEntryHistory>? _oldEntries;
+    private List<VaultEntry>? _oldEntries;
     private bool _passwordDecrypted;
-    private HashSet<int> _historyPasswordsDecrypted = new(); // Track des mots de passe historiques déchiffrés (legacy, peut être supprimé)
 
     private readonly string _uid = Guid.NewGuid().ToString("N");
     private string DomId(string field) => $"entry-{Entry.Id}-{_uid}-{field}";
@@ -149,7 +149,6 @@
         _showModal = true;
         _needDecrypt = true;
         _needDecryptHistory = false;
-        _historyPasswordsDecrypted.Clear();
 
         try
         {
@@ -158,57 +157,28 @@
             
             try
             {
-                _oldEntries = await DownstreamApi.GetForUserAsync<List<VaultEntryHistory>>(
-                    "DownstreamApi",
-                    o => o.RelativePath = $"/Entry/{Entry.Id}"
-                ) ?? new();
+                _oldEntries = await EntryService.GetEntryHistoryAsync(Entry.Id);
                 
                 Console.WriteLine($"Historique récupéré avec VaultEntryHistory : {_oldEntries.Count} version(s)");
             }
             catch (Exception historyEx)
             {
                 Console.WriteLine($"Impossible de désérialiser en VaultEntryHistory : {historyEx.Message}");
-                Console.WriteLine($"Tentative avec List<VaultEntry>...");
-                
-                // Fallback: essayer avec VaultEntry
-                var oldEntriesAsVault = await DownstreamApi.GetForUserAsync<List<VaultEntry>>(
-                    "DownstreamApi",
-                    o => o.RelativePath = $"/Entry/{Entry.Id}"
-                ) ?? new();
-                
-                Console.WriteLine($"Historique récupéré avec VaultEntry : {oldEntriesAsVault.Count} version(s)");
-                
-                // Convertir VaultEntry en VaultEntryHistory
-                _oldEntries = oldEntriesAsVault.Select(ve => new VaultEntryHistory
-                {
-                    Id = ve.Id,
-                    EntryId = Entry.Id,
-                    NomCypherId = ve.NomCypherId,
-                    NomCypher = ve.NomCypher,
-                    UserNameCypherId = ve.UserNameCypherId,
-                    UserNameCypher = ve.UserNameCypher,
-                    PasswordCypherId = ve.PasswordCypherId,
-                    PasswordCypher = ve.PasswordCypher,
-                    NoteCypherId = ve.NoteCypherId,
-                    NoteCypher = ve.NoteCypher,
-                    UrlCypherId = ve.UrlCypherId,
-                    UrlCypher = ve.UrlCypher,
-                    ModifiedAt = ve.UpdatedAt ?? ve.CreatedAt
-                }).ToList();
             }
             
-            if (_oldEntries.Count == 0)
+            if (_oldEntries != null && _oldEntries.Count == 0)
             {
                 Console.WriteLine("Aucune version d'historique trouvée pour cette entrée");
             }
             else
             {
                 Console.WriteLine($"Versions d'historique :");
-                foreach (var entry in _oldEntries)
-                {
-                    Console.WriteLine($"  - ID: {entry.Id}, Modifié le: {entry.ModifiedAt}");
-                }
-                
+                if (_oldEntries != null)
+                    foreach (var entry in _oldEntries)
+                    {
+                        Console.WriteLine($"  - ID: {entry.Id}, Modifié le: {entry.ModifiedAt}");
+                    }
+
                 // Activer le déchiffrement de l'historique
                 _needDecryptHistory = true;
             }
@@ -309,7 +279,6 @@
         _showModal = false;
         _passwordDecrypted = false;
         _needDecryptHistory = false;
-        _historyPasswordsDecrypted.Clear();
         StateHasChanged();
     }
 

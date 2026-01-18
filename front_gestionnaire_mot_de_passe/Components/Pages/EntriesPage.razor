@@ -63,7 +63,7 @@ else
     [Parameter] public int Id { get; set; }
 
     private EntryDisplayDto? Entry { get; set; }
-    private List<VaultEntryHistory>? History { get; set; }
+    private List<VaultEntry>? History { get; set; }
     
     private void BacktoVault()
     {
@@ -75,11 +75,10 @@ else
     {
         try
         {
-            // Étape 1: Récupérer l'historique de l'entrée
+            // Récupérer l'historique de l'entrée
             History = await EntryService.GetEntryHistoryAsync(Id);
             
-            // Étape 2: Pour trouver l'entrée actuelle, on doit d'abord connaître le vaultId
-            // Solution: parcourir tous les vaults pour trouver l'entrée
+            // Recherche de l'entrée actuelle
             VaultEntry? currentEntry = null;
             
             var vaults = await VaultService.GetAllVaultsAsync();

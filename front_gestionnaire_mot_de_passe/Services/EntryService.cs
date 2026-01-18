@@ -9,7 +9,7 @@ public interface IEntryService
 {
     Task<VaultEntry?> GetEntryByIdAsync(int entryId);
     Task<List<VaultEntry>> GetEntriesByVaultIdAsync(int vaultId);
-    Task<List<VaultEntryHistory>> GetEntryHistoryAsync(int entryId);
+    Task<List<VaultEntry>> GetEntryHistoryAsync(int entryId);
 }
 
 public class EntryService : IEntryService
@@ -23,6 +23,7 @@ public class EntryService : IEntryService
         _logger = logger;
     }
 
+    // Plus utilisé
     public async Task<VaultEntry?> GetEntryByIdAsync(int entryId)
     {
         try
@@ -52,22 +53,24 @@ public class EntryService : IEntryService
         }
     }
 
-    public async Task<List<VaultEntryHistory>> GetEntryHistoryAsync(int entryId)
+    public async Task<List<VaultEntry>> GetEntryHistoryAsync(int entryId)
     {
         try
         {
-            var history = await _api.GetForUserAsync<List<VaultEntryHistory>>(
+            List<GetEntryObj> historyDto = await _api.GetForUserAsync<List<GetEntryObj>>(
                 "DownstreamApi",
                 o => o.RelativePath = $"/Entry/{entryId}"
             ) ?? new();
 
+            List<VaultEntry> history = historyDto.Select(MapDtoToVaultEntry).ToList();
+            
             _logger.LogInformation("Historique récupéré pour l'entrée {EntryId} : {Count} versions", entryId, history.Count);
             return history;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Erreur lors de la récupération de l'historique de l'entrée {EntryId}", entryId);
-            return new List<VaultEntryHistory>();
+            return new List<VaultEntry>();
         }
     }
 
@@ -107,7 +110,9 @@ public class EntryService : IEntryService
             NoteCypherId = dto.NoteCypherId,
             NoteCypher = dto.NoteCypherObj != null ? MapDtoToCypherData(dto.NoteCypherObj) : null,
             NomCypherId = dto.NomCypherId,
-            NomCypher = dto.NomCypherObj != null ? MapDtoToCypherData(dto.NomCypherObj) : null
+            NomCypher = dto.NomCypherObj != null ? MapDtoToCypherData(dto.NomCypherObj) : null,
+            CreatedAt = dto.CreatedAt,
+            UpdatedAt = dto.UpdatedAt
         };
     }
 

@@ -6,6 +6,8 @@ public class VaultEntry
     
     public int VaultId { get; set; }
     
+    public int? EntryId { get; set; }
+    
     public int UserNameCypherId { get; set; }
     
     public CypherData? UserNameCypher { get; set; }
@@ -28,4 +30,6 @@ public class VaultEntry
     public DateTime CreatedAt { get; set; } = DateTime.Now;
     
     public DateTime? UpdatedAt { get; set; } 
+    
+    public DateTime ModifiedAt => UpdatedAt ?? CreatedAt;
 }
