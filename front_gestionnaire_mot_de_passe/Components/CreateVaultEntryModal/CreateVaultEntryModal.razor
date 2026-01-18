@@ -1,10 +1,12 @@
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.Identity.Web
-@attribute [Authorize]
-@inject ITokenAcquisition TokenAcquisition
-@rendermode InteractiveServer
 @using front_gestionnaire_mot_de_passe.Interop
+@using front_gestionnaire_mot_de_passe.Services
 @inject CryptoInterop CryptoInterop;
+@inject TokenService TokenService
+@inject ITokenAcquisition TokenAcquisition
+@attribute [Authorize]
+@rendermode InteractiveServer
 
 @if (IsVisible)
 {
@@ -41,11 +43,9 @@
             </div>
             
             <button class="form_group_button" type="button" @onclick="GeneratePassword">
-                🔄  Générer un mot de passe
+                Générer un mot de passe
             </button>
             
-            
-
             <div class="form-group">
                 <label>URL</label>
                 <input id="ce-url" />
@@ -56,8 +56,6 @@
                 <textarea id="ce-notes" rows="3"></textarea>
             </div>
             
-            @* <PasswordStrengthMeter Password="@_password" /> *@
-
             <div class="modal-actions">
                 <button @onclick="SubmitForm">Enregistrer</button>
                 <button @onclick="CloseModal">Annuler</button>
@@ -98,10 +96,7 @@
     {
         if (firstRender && !_tokenPushed)
         {
-            var token = await TokenAcquisition.GetAccessTokenForUserAsync(new[]
-            {
-                "api://b8f83755-0f15-42f5-9a43-cedf7cc50c0a/access_as_user"
-            });
+            string token = await TokenService.GetApiAccessTokenAsync();
             await CryptoInterop.SetApiAccessTokenAsync(token);
             _tokenPushed = true;
         }

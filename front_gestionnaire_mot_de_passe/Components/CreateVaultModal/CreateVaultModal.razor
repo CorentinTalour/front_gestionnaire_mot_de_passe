@@ -1,13 +1,11 @@
 @using System.Text.Json
 @using Microsoft.AspNetCore.Authorization
-@using Microsoft.Identity.Web
 @using front_gestionnaire_mot_de_passe.Models
-@attribute [Authorize]
-@attribute [AuthorizeForScopes(Scopes = new[] { "api://b8f83755-0f15-42f5-9a43-cedf7cc50c0a/access_as_user" })]
-@inject ITokenAcquisition TokenAcquisition
 @using front_gestionnaire_mot_de_passe.Interop
+@using front_gestionnaire_mot_de_passe.Services
 @inject CryptoInterop CryptoInterop;
-
+@inject TokenService TokenService
+@attribute [Authorize]
 
 @if (IsVisible)
 {
@@ -67,11 +65,7 @@
     {
         if (firstRender && !_tokenPushed)
         {
-            var token = await TokenAcquisition.GetAccessTokenForUserAsync(new[]
-            {
-                "api://b8f83755-0f15-42f5-9a43-cedf7cc50c0a/access_as_user"
-            });
-
+            string token = await TokenService.GetApiAccessTokenAsync();
             await CryptoInterop.SetApiAccessTokenAsync(token);
             _tokenPushed = true;
         }
@@ -97,7 +91,7 @@
     {
         try
         {
-            JsonElement json = await CryptoInterop.CreateVaultWithDEKAsync(600_000);
+            JsonElement json = await CryptoInterop.CreateVaultWithDEKAsync();
 
             int newId = 0;
             if (json.TryGetProperty("vaultId", out var v)) newId = v.GetInt32();

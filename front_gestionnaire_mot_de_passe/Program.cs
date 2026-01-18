@@ -13,8 +13,9 @@ var builder = WebApplication.CreateBuilder(args);
 // Lecture des informations de la WebAPI depuis le fichier de configuration.
 string apiEndpoint = builder.Configuration.GetValue<string>("DownstreamApi:BaseUrl")
                      ?? throw new InvalidOperationException("API BaseUrl missing");
-string apiScope = builder.Configuration.GetValue<string>("DownstreamApi:Scopes")
-                  ?? throw new InvalidOperationException("API Scope missing");
+var scopes = builder.Configuration.GetSection("DownstreamApi:Scopes").Get<string[]>()
+             ?? throw new InvalidOperationException("API Scopes missing");
+string apiScope = scopes[0]; // Pour la compatibilité avec le code existant
 
 // Service pour lire la configuration de l'application.
 builder.Services.AddSingleton<AppConfig>();
@@ -23,11 +24,11 @@ builder.Services.AddSingleton<AppConfig>();
 builder.Services
     .AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
     .AddMicrosoftIdentityWebApp(builder.Configuration.GetSection("AzureAd"))
-    .EnableTokenAcquisitionToCallDownstreamApi([apiScope])
+    .EnableTokenAcquisitionToCallDownstreamApi(scopes)
     .AddDownstreamApi("DownstreamApi", options =>
     {
         options.BaseUrl = apiEndpoint;
-        options.Scopes = [apiScope];
+        options.Scopes = scopes;
     })
     .AddInMemoryTokenCaches();
 builder.Services.AddAuthorization(o => o.FallbackPolicy = o.DefaultPolicy);
@@ -36,6 +37,7 @@ builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddScoped<CryptoInterop>();
 builder.Services.AddScoped<VaultState>();
 
+builder.Services.AddScoped<TokenService>();
 builder.Services.AddScoped<IVaultService, VaultService>();
 builder.Services.AddScoped<IUsersService, UsersService>();
 builder.Services.AddScoped<IEntryService, EntryService>();

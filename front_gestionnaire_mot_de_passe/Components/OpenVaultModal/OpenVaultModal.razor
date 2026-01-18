@@ -5,6 +5,7 @@
 @inject Interop.CryptoInterop Crypto
 @inject NavigationManager Nav
 @inject VaultState VaultState
+@inject TokenService TokenService
 @attribute [Authorize]
 
 @if (IsVisible)
@@ -52,11 +53,7 @@
         {
             try
             {
-                var token = await TokenAcquisition.GetAccessTokenForUserAsync(new[]
-                {
-                    "api://b8f83755-0f15-42f5-9a43-cedf7cc50c0a/access_as_user"
-                });
-
+                string token = await TokenService.GetApiAccessTokenAsync();
                 await Crypto.SetApiAccessTokenAsync(token);
                 _tokenPushed = true;
             }
