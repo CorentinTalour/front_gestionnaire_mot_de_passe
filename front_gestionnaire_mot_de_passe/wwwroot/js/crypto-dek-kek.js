@@ -162,16 +162,16 @@ export async function createVaultWithDEK(iterations = 600000, apiBase) {
 }
 
 /**
- * Ouvre un vault avec système DEK/KEK
- * AMÉLIORE openVaultFromModal
+ * Ouvre un vault avec système DEK/KEK en utilisant les données fournies directement
  * @param {number} vaultId - ID du vault
  * @param {string} inputId - ID du champ input
  * @param {string} vaultSaltB64 - Salt en base64
  * @param {number} iterations - Itérations PBKDF2
+ * @param {Object} vaultData - Données complètes du vault (optionnel)
  * @param {string} apiBase - URL de base de l'API
  * @returns {Promise<boolean>} True si succès
  */
-export async function openVaultWithDEKFromModal(vaultId, inputId, vaultSaltB64, iterations, apiBase) {
+export async function openVaultWithDEKFromModal(vaultId, inputId, vaultSaltB64, iterations, vaultData, apiBase) {
     apiBase ??= apiBaseUrl();
     const el = document.getElementById(inputId);
     if (!(el instanceof HTMLInputElement)) throw new Error("Input mot de passe introuvable");
@@ -187,14 +187,33 @@ export async function openVaultWithDEKFromModal(vaultId, inputId, vaultSaltB64, 
             return false;
         }
 
-        // Récupération des données du vault (avec DEK wrappée)
-        const vaultRes = await fetch(`${apiBase}/Vault/${vaultId}`, {
-            headers: authHeaders()
-        });
+        let vault;
+        
+        // Si les données du vault sont fournies et contiennent les données DEK, les utiliser
+        if (vaultData && vaultData.wrappedDekB64 && vaultData.dekIvB64 && vaultData.dekTagB64) {
+            vault = vaultData;
+            console.log("Utilisation des données DEK fournies directement");
+        } else {
+            // Sinon, récupération des données du vault via API
+            console.log("Récupération des données DEK via API");
+            const vaultRes = await fetch(`${apiBase}/Vault/${vaultId}`, {
+                headers: authHeaders()
+            });
 
-        if (!vaultRes.ok) throw new Error("Impossible de récupérer le vault");
+            if (!vaultRes.ok) {
+                const errorText = await vaultRes.text().catch(() => "");
+                console.error("Erreur récupération vault:", vaultRes.status, vaultRes.statusText, errorText);
+                throw new Error(`Impossible de récupérer le vault (HTTP ${vaultRes.status})`);
+            }
 
-        const vault = await vaultRes.json();
+            vault = await vaultRes.json();
+            
+            // Vérifier que les données DEK sont présentes
+            if (!vault.wrappedDekB64 || !vault.dekIvB64 || !vault.dekTagB64) {
+                console.error("Données DEK manquantes dans la réponse:", vault);
+                throw new Error("Le vault ne contient pas les données de chiffrement nécessaires (DEK)");
+            }
+        }
 
         // Utilisation du kekSaltB64 du vault
         const kekSaltToUse = vault.kekSaltB64 || vaultSaltB64;

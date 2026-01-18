@@ -124,7 +124,10 @@ public class CryptoInterop
         => await (await Mod()).InvokeAsync<bool>("openVaultFromModal", vaultId, inputId, vaultSaltB64, iterations, UrlApiBase);
     
     public async Task<bool> OpenVaultWithDEKFromModalAsync(int vaultId, string inputId, string vaultSaltB64, int iterations)
-        => await (await Mod()).InvokeAsync<bool>("openVaultWithDEKFromModal", vaultId, inputId, vaultSaltB64, iterations, UrlApiBase);
+        => await (await Mod()).InvokeAsync<bool>("openVaultWithDEKFromModal", vaultId, inputId, vaultSaltB64, iterations, null, UrlApiBase);
+    
+    public async Task<bool> OpenVaultWithDEKFromModalAsync(int vaultId, string inputId, string vaultSaltB64, int iterations, object vaultData)
+        => await (await Mod()).InvokeAsync<bool>("openVaultWithDEKFromModal", vaultId, inputId, vaultSaltB64, iterations, vaultData, UrlApiBase);
     
     public async Task<bool> ChangeVaultPasswordFromModalAsync(int vaultId)
         => await (await Mod()).InvokeAsync<bool>("changeVaultPasswordFromModal", vaultId, UrlApiBase);
