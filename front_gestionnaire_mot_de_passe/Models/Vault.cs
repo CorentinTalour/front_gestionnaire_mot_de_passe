@@ -54,20 +54,11 @@ public class Vault
     
     public DateTime? UpdatedAt { get; set; } 
     [MaxLength(1000)]
-    public string Password { get; set; } 
+    public string? Password { get; set; } 
 
     public int UserId { get; set; }
     [ForeignKey(nameof(UserId))]
     
     [NotMapped]
     public bool IsOwner { get; set; } = false;
-    public User? User { get; set; }
-}
-
-public class User
-{
-    public int Id { get; set; }
-    public string EntraId { get; set; }
-    public string Email { get; set; }
-    public DateTime CreatedAt { get; set; }
 }

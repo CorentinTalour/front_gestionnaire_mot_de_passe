@@ -1,5 +1,6 @@
 using front_gestionnaire_mot_de_passe.Models;
 using Microsoft.Identity.Abstractions;
+using DtoLib.Objet.Vault;
 
 namespace front_gestionnaire_mot_de_passe.Services;
 
@@ -26,10 +27,12 @@ public class VaultService : IVaultService
     {
         try
         {
-            var vaults = await _api.GetForUserAsync<List<Vault>>(
+            List<GetVaultObj> vaultsDto = await _api.GetForUserAsync<List<GetVaultObj>>(
                 "DownstreamApi",
                 o => o.RelativePath = "/Vault/All"
             ) ?? new();
+
+            List<Vault> vaults = vaultsDto.Select(MapDtoToVault).ToList();
             
             _logger.LogInformation("Nombre de coffres récupérés : {Count}", vaults.Count);
             return vaults;
@@ -45,9 +48,9 @@ public class VaultService : IVaultService
     {
         try
         {
-            var allVaults = await GetAllVaultsAsync();
-            var vault = allVaults.FirstOrDefault(v => v.Id == vaultId);
-            
+            List<Vault> allVaults = await GetAllVaultsAsync();
+            Vault? vault = allVaults.FirstOrDefault(v => v.Id == vaultId);
+
             if (vault == null)
             {
                 _logger.LogWarning("Aucun coffre trouvé avec l'ID {VaultId}", vaultId);
@@ -62,7 +65,7 @@ public class VaultService : IVaultService
             if (currentUserId.HasValue)
             {
                 vault.IsOwner = vault.UserId == currentUserId.Value;
-                
+
                 _logger.LogInformation(
                     "Comparaison des IDs - VaultData.UserId: {VaultUserId}, CurrentUserId: {CurrentUserId}, IsOwner: {IsOwner}",
                     vault.UserId, currentUserId.Value, vault.IsOwner
@@ -73,7 +76,7 @@ public class VaultService : IVaultService
                 vault.IsOwner = false;
                 _logger.LogWarning("Impossible de déterminer IsOwner - currentUserId est null");
             }
-            
+
             return vault;
         }
         catch (Exception ex)
@@ -95,7 +98,7 @@ public class VaultService : IVaultService
                     options.HttpMethod = HttpMethod.Delete.ToString();
                     options.RelativePath = $"/Vault/{vaultId}";
                 });
-            
+
             _logger.LogInformation("Coffre {VaultId} supprimé avec succès", vaultId);
         }
         catch (Exception ex)
@@ -109,10 +112,12 @@ public class VaultService : IVaultService
     {
         try
         {
-            var logs = await _api.GetForUserAsync<List<Log>>(
+            List<GetVaultLogObj> logsDto = await _api.GetForUserAsync<List<GetVaultLogObj>>(
                 "DownstreamApi",
                 o => o.RelativePath = $"/Vault/GetLogVault/{vaultId}"
             ) ?? new();
+
+            List<Log> logs = logsDto.Select(MapDtoToLog).ToList();
             
             _logger.LogInformation("Nombre de logs récupérés pour le coffre {VaultId} : {Count}", vaultId, logs.Count);
             return logs;
@@ -123,5 +128,41 @@ public class VaultService : IVaultService
             return new List<Log>();
         }
     }
+    
+    private Vault MapDtoToVault(GetVaultObj dto)
+    {
+        return new Vault
+        {
+            Id = dto.Id,
+            Name = dto.Name,
+            Salt = dto.Salt,
+            NbIteration = dto.NbIteration,
+            Iterations = dto.Iterations,
+            Argon2Iterations = dto.Argon2Iterations,
+            Argon2MemoryKB = dto.Argon2MemoryKb,
+            Argon2Parallelism = dto.Argon2Parallelism,
+            WrappedDekB64 = dto.WrappedDekB64,
+            DekIvB64 = dto.DekIvB64,
+            DekTagB64 = dto.DekTagB64,
+            KekSaltB64 = dto.KekSaltB64,
+            KekIterations = dto.KekIterations,
+            CreatedAt = dto.CreatedAt,
+            UpdatedAt = dto.UpdatedAt,
+            Password = dto.Password,
+            UserId = dto.UserId
+        };
+    }
+    
+    private Log MapDtoToLog(GetVaultLogObj dto)
+    {
+        return new Log
+        {
+            Id = dto.Id,
+            Url = dto.Url,
+            Duration = dto.Duration,
+            ExecutedAt = dto.ExecutedAt,
+            EntraId = dto.EntraId,
+            VaultId = dto.VaultId
+        };
+    }
 }
-

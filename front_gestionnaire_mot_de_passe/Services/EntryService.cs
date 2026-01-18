@@ -1,3 +1,5 @@
+using DtoLib.Objet.Cypher;
+using DtoLib.Objet.Entry;
 using front_gestionnaire_mot_de_passe.Models;
 using Microsoft.Identity.Abstractions;
 
@@ -73,10 +75,12 @@ public class EntryService : IEntryService
     {
         try
         {
-            var entries = await _api.GetForUserAsync<List<VaultEntry>>(
+            List<GetEntryObj> entriesDto = await _api.GetForUserAsync<List<GetEntryObj>>(
                 "DownstreamApi",
                 o => o.RelativePath = $"/Entry/VaultId?vaultId={vaultId}"
             ) ?? new();
+            
+            List<VaultEntry> entries = entriesDto.Select(MapDtoToVaultEntry).ToList();
 
             _logger.LogInformation("Nombre d'entrées récupérées pour le coffre {VaultId} : {Count}", vaultId, entries.Count);
             return entries;
@@ -87,5 +91,37 @@ public class EntryService : IEntryService
             return new List<VaultEntry>();
         }
     }
+    
+    private VaultEntry MapDtoToVaultEntry(GetEntryObj dto)
+    {
+        return new VaultEntry
+        {
+            Id = dto.Id,
+            VaultId = dto.VaultId,
+            UserNameCypherId = dto.UserNameCypherId,
+            UserNameCypher = dto.UserNameCypherObj != null ? MapDtoToCypherData(dto.UserNameCypherObj) : null,
+            PasswordCypherId = dto.PasswordCypherId,
+            PasswordCypher = dto.PasswordCypherObj != null ? MapDtoToCypherData(dto.PasswordCypherObj) : null,
+            UrlCypherId = dto.UrlCypherId,
+            UrlCypher = dto.UrlCypherObj != null ? MapDtoToCypherData(dto.UrlCypherObj) : null,
+            NoteCypherId = dto.NoteCypherId,
+            NoteCypher = dto.NoteCypherObj != null ? MapDtoToCypherData(dto.NoteCypherObj) : null,
+            NomCypherId = dto.NomCypherId,
+            NomCypher = dto.NomCypherObj != null ? MapDtoToCypherData(dto.NomCypherObj) : null
+        };
+    }
+
+    private CypherData? MapDtoToCypherData(GetCypherObj? dto)
+    {
+        if (dto == null) return null;
+
+        return new CypherData
+        {
+            Cypher = dto.Cypher,
+            CypherIv = dto.CypherIv,
+            CypherTag = dto.CypherTag
+        };
+    }
+
 }
 

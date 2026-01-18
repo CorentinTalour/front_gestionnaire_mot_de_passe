@@ -14,7 +14,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <_ContentIncludedByDefault Remove="Components\EntryDetailsModal.razor\EntryDetailsModal.razor" />
+      <ProjectReference Include="..\..\api_chiffrement_scharp\DtoLib\DtoLib.csproj" />
     </ItemGroup>
 
 </Project>

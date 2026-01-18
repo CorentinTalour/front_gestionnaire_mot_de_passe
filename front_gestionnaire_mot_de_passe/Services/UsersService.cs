@@ -1,3 +1,4 @@
+using front_gestionnaire_mot_de_passe.Models;
 using front_gestionnaire_mot_de_passe.Models.VaultMembers;
 using Microsoft.Identity.Abstractions;
 
@@ -5,7 +6,7 @@ namespace front_gestionnaire_mot_de_passe.Services;
 
 public interface IUsersService
 {
-    Task<GetUserObj?> GetCurrentUserAsync();
+    Task<User?> GetCurrentUserAsync();
 }
 
 public class UsersService : IUsersService
@@ -19,17 +20,20 @@ public class UsersService : IUsersService
         _logger = logger;
     }
     
-    public async Task<GetUserObj?> GetCurrentUserAsync()
+    public async Task<User?> GetCurrentUserAsync()
     {
         try
         {
-            var user = await _api.GetForUserAsync<GetUserObj>(
+            GetUserObj? userDto = await _api.GetForUserAsync<GetUserObj>(
                 "DownstreamApi",
                 o => o.RelativePath = "/Users/Me"
             );
             
-            if (user != null)
+            User? user = null;
+            
+            if (userDto != null)
             {
+                user = MapDtoToUser(userDto);
                 _logger.LogInformation("Utilisateur connecté trouvé - ID: {UserId}, Email: {Email}", user.Id, user.Email);
             }
             else
@@ -44,5 +48,14 @@ public class UsersService : IUsersService
             _logger.LogError(ex, "Erreur lors de la récupération de l'utilisateur connecté");
             return null;
         }
+    }
+    
+    private User MapDtoToUser(GetUserObj dto)
+    {
+        return new User
+        {
+            Id = dto.Id,
+            Email = dto.Email,
+        };
     }
 }

@@ -9,18 +9,15 @@ public class Log
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public int Id { get; set; }
     
-    public required string Url { get; set; }
+    public string Url { get; set; } = string.Empty;
     
     public float Duration { get; set; }
     
     public DateTime ExecutedAt { get; set; }
     
-    public required string Message { get; set; }
+    public string Message { get; set; } = string.Empty;
     
     public int? EntraId { get; set; }
-
-
+    
     public int? VaultId { get; set; }
-    
-    
 }
