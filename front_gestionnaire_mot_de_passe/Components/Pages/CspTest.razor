@@ -1,0 +1,27 @@
+@page "/CspTest"
+@inject IJSRuntime Js
+@rendermode InteractiveServer
+
+<h3>Test CSP - Chargement jQuery</h3>
+
+<button class="btn btn-primary" @onclick="LoadJquery">Charger jQuery</button>
+<h5>jQuery.fn.jquery</h5>
+
+<h3>Test CSP – Handler HTML</h3>
+
+<img src="x" onerror="alert('XSS')">
+
+<h3>Test CSP – Form Action</h3>
+
+<form method="post" action="https://example.com">
+    <button type="submit">Envoyer vers site externe</button>
+</form>
+
+<iframe src="https://localhost:7093"></iframe>
+
+@code {
+    private async Task LoadJquery()
+    {
+        await Js.InvokeVoidAsync("cspTest_loadExternalScript");
+    }
+}

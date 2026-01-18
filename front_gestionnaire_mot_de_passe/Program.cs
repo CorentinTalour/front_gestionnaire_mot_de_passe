@@ -66,6 +66,71 @@ builder.Services.AddScoped(sp =>
 var app = builder.Build();
 
 app.UseHttpsRedirection();
+
+// Middleware de sécurité : Content Security Policy (CSP)
+// La CSP permet de limiter les sources autorisées pour charger/exécuter des ressources
+// et de réduire les risques d'attaques XSS ou d'injection de scripts.
+app.Use(async (context, next) =>
+{
+    // Blazor Server utilise SignalR pour la communication client/serveur,
+    // ce qui passe par WebSocket. Il faut donc l'autoriser explicitement
+    var csp =
+        // Par défaut, aucune ressource n'est autorisée
+        // Tout doit être explicitement déclaré
+        "default-src 'none'; " +
+
+        // Autorise la balise <base> uniquement vers l'origine courante
+        // Empêche la redéfinition de base URL vers un domaine malveillant
+        "base-uri 'self'; " +
+
+        // Interdit complètement les objets embarqués (Flash, plugins, etc.)
+        "object-src 'none'; " +
+
+        // Empêche l'application d'être intégrée dans une iframe
+        // (protection contre le clickjacking)
+        "frame-ancestors 'none'; " +
+
+        // Autorise l'envoi de formulaires uniquement :
+        // - vers l'application elle-même
+        // - vers Microsoft Entra ID
+        "form-action 'self' https://login.microsoftonline.com; " +
+
+        // Autorise les images depuis l'application
+        // et les data URLs
+        "img-src 'self' data:; " +
+
+        // Autorise les polices uniquement depuis l'application
+        "font-src 'self'; " +
+
+        // Autorise les styles depuis l'application
+        // 'unsafe-inline' est nécessaire car Blazor génère certains styles inline
+        "style-src 'self' 'unsafe-inline'; " +
+
+        // Autorise les scripts uniquement depuis l'application
+        // Aucun script inline n'est autorisé → protection contre XSS
+        "script-src 'self'; " +
+
+        // Autorise les connexions réseau :
+        // - vers l'application
+        // - en HTTPS
+        // - en WebSocket sécurisé (SignalR / Blazor Server)
+        $"connect-src 'self' {apiEndpoint} wss:;";
+
+    // Application de la CSP en mode bloquant
+    // (les violations sont bloquées par le navigateur)
+    context.Response.Headers["Content-Security-Policy"] = csp;
+
+    // Header de sécurité complémentaire :
+    // Empêche le navigateur d'interpréter un fichier avec un mauvais type MIME
+    context.Response.Headers["X-Content-Type-Options"] = "nosniff";
+
+    // Empêche l'envoi du header Referer vers des sites externes
+    // Limite les fuites d'information
+    context.Response.Headers["Referrer-Policy"] = "no-referrer";
+
+    await next();
+});
+
 app.UseCors("Dev");
 app.UseStaticFiles();
 app.UseAuthentication();
