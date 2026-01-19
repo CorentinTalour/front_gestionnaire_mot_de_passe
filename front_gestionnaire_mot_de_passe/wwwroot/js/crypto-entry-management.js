@@ -4,8 +4,8 @@
 
 import { b64, b64d, asU8 } from './crypto-utils.js';
 import { authHeaders } from './crypto-auth.js';
-import { currentVault, touchVault } from './crypto-vault-session.js';
-import { encFieldWithVaultKey, decFieldWithVaultKey, makeCypherObj } from './crypto-encryption.js';
+import { currentVault, touchVault, ensureVaultOpen } from './crypto-vault-session.js';
+import { encFieldWithVaultKey, decFieldWithVaultKey, makeCypherObj, decryptCypherObj } from './crypto-encryption.js';
 import { storePassword, maskPassword, retrievePassword } from './crypto-password-tools.js';
 import { apiBaseUrl } from "./crypto-config.js";
 
@@ -188,7 +188,7 @@ export async function updateEntryFromModal(EntryId, apiBase) {
  * @returns {Promise<void>}
  */
 export async function fillUpdateModal(vaultId, entry) {
-    if (!currentVault?.key) throw new Error("Vault non ouvert (clé AES absente).");
+    ensureVaultOpen(vaultId);
 
     const ns = `vault:${vaultId}`;
     const setVal = (id, value) => {
@@ -196,21 +196,13 @@ export async function fillUpdateModal(vaultId, entry) {
         if (el) el.value = value ?? "";
     };
 
-    const dec = async (obj, aad) => {
-        if (!obj) return "";
-        const c  = asU8(obj.cypher ?? obj.baseCypher);
-        const t  = asU8(obj.cypherTag ?? obj.baseCypherTag);
-        const iv = asU8(obj.cypherIv ?? obj.baseCypherIv);
-        return await decFieldWithVaultKey(c, t, iv, aad);
-    };
+    setVal("ce-username", await decryptCypherObj(entry.userNameCypher, `${ns}|field:username`));
 
-    setVal("ce-username", await dec(entry.userNameCypher, `${ns}|field:username`));
-
-    const clearPwd = await dec(entry.passwordCypher, `${ns}|field:password`);
+    const clearPwd = await decryptCypherObj(entry.passwordCypher, `${ns}|field:password`);
     setVal("ce-password", clearPwd);
 
-    setVal("ce-url",      await dec(entry.urlCypher,      `${ns}|field:url`));
-    setVal("ce-notes",    await dec(entry.noteCypher,     `${ns}|field:notes`));
+    setVal("ce-url",      await decryptCypherObj(entry.urlCypher,      `${ns}|field:url`));
+    setVal("ce-notes",    await decryptCypherObj(entry.noteCypher,     `${ns}|field:notes`));
 
     touchVault();
 }
@@ -285,17 +277,7 @@ export async function renderVaultEntries(records) {
  * @returns {Promise<void>}
  */
 export async function decryptEntryToDom(vaultId, entry, ids) {
-
-    if (!currentVault?.key) throw new Error("Vault non ouvert (clé AES absente).");
-
-    if (String(currentVault.id) !== String(vaultId)) {
-        throw new Error(`Vault ouvert = ${currentVault.id}, mais on tente de déchiffrer vaultId = ${vaultId}`);
-    }
-
-    if (!currentVault?.key) {
-        console.error("Vault non ouvert ou clé absente !");
-        throw new Error("Vault non ouvert (clé AES absente).");
-    }
+    ensureVaultOpen(vaultId);
 
     const ns = `vault:${vaultId}`;
     const setText = (id, value) => {
@@ -303,26 +285,18 @@ export async function decryptEntryToDom(vaultId, entry, ids) {
         if (el) el.textContent = value ?? "";
     };
 
-    const dec = async (obj, aad) => {
-        if (!obj) return "";
-        const c  = asU8(obj.cypher ?? obj.baseCypher);
-        const t  = asU8(obj.cypherTag ?? obj.baseCypherTag);
-        const iv = asU8(obj.cypherIv ?? obj.baseCypherIv);
-        return await decFieldWithVaultKey(c, t, iv, aad);
-    };
-
     // tes propriétés sont en camelCase d'après ton log
-    setText(ids.nameId,     await dec(entry.nomCypher,      `${ns}|field:name`));
-    setText(ids.usernameId, await dec(entry.userNameCypher, `${ns}|field:username`));
-    const clearPwd = await dec(entry.passwordCypher, `${ns}|field:password`);
+    setText(ids.nameId,     await decryptCypherObj(entry.nomCypher,      `${ns}|field:name`));
+    setText(ids.usernameId, await decryptCypherObj(entry.userNameCypher, `${ns}|field:username`));
+    const clearPwd = await decryptCypherObj(entry.passwordCypher, `${ns}|field:password`);
 
     // on garde le clair en RAM JS (pas dans le DOM)
     storePassword(ids.passwordId, clearPwd);
 
     // affichage masqué par défaut
     setText(ids.passwordId, maskPassword(clearPwd));    
-    setText(ids.urlId,      await dec(entry.urlCypher,      `${ns}|field:url`));
-    setText(ids.notesId,    await dec(entry.noteCypher,     `${ns}|field:notes`));
+    setText(ids.urlId,      await decryptCypherObj(entry.urlCypher,      `${ns}|field:url`));
+    setText(ids.notesId,    await decryptCypherObj(entry.noteCypher,     `${ns}|field:notes`));
 
     touchVault();
 }
@@ -338,13 +312,7 @@ export async function decryptEntryToDom(vaultId, entry, ids) {
  */
 export async function fetchAndDecryptPassword(vaultId, entryId, passwordId, apiBase) {
     apiBase ??= apiBaseUrl();
-    if (!currentVault?.key) {
-        throw new Error("Vault non ouvert (clé AES absente).");
-    }
-
-    if (String(currentVault.id) !== String(vaultId)) {
-        throw new Error(`Vault ouvert = ${currentVault.id}, mais on tente de déchiffrer vaultId = ${vaultId}`);
-    }
+    ensureVaultOpen(vaultId);
 
     try {
         // Appel API pour récupérer le mot de passe chiffré
@@ -367,11 +335,7 @@ export async function fetchAndDecryptPassword(vaultId, entryId, passwordId, apiB
 
         // Déchiffrement côté client
         const ns = `vault:${vaultId}`;
-        const c  = asU8(passwordCypher.cypher ?? passwordCypher.baseCypher);
-        const t  = asU8(passwordCypher.cypherTag ?? passwordCypher.baseCypherTag);
-        const iv = asU8(passwordCypher.cypherIv ?? passwordCypher.baseCypherIv);
-        
-        const clearPwd = await decFieldWithVaultKey(c, t, iv, `${ns}|field:password`);
+        const clearPwd = await decryptCypherObj(passwordCypher, `${ns}|field:password`);
 
         // Stockage en RAM JS (pas dans le DOM)
         storePassword(passwordId, clearPwd);
@@ -401,13 +365,7 @@ export async function fetchAndDecryptPassword(vaultId, entryId, passwordId, apiB
  */
 export async function fetchAndDecryptSingleHistoryPassword(vaultId, entryId, historyId, passwordCypherId, apiBase) {
     apiBase ??= apiBaseUrl();
-    if (!currentVault?.key) {
-        throw new Error("Vault non ouvert (clé AES absente).");
-    }
-
-    if (String(currentVault.id) !== String(vaultId)) {
-        throw new Error(`Vault ouvert = ${currentVault.id}, mais on tente de déchiffrer vaultId = ${vaultId}`);
-    }
+    ensureVaultOpen(vaultId);
 
     const passwordId = `entry-${historyId}-password`;
 
@@ -449,11 +407,7 @@ export async function fetchAndDecryptSingleHistoryPassword(vaultId, entryId, his
         
         // Déchiffrement côté client
         const ns = `vault:${vaultId}`;
-        const c  = asU8(cypherData.cypher);
-        const t  = asU8(cypherData.cypherTag);
-        const iv = asU8(cypherData.cypherIv);
-        
-        const clearPwd = await decFieldWithVaultKey(c, t, iv, `${ns}|field:password`);
+        const clearPwd = await decryptCypherObj(cypherData, `${ns}|field:password`);
 
         // Stockage en RAM JS
         storePassword(passwordId, clearPwd);
@@ -484,13 +438,7 @@ export async function fetchAndDecryptSingleHistoryPassword(vaultId, entryId, his
  */
 export async function fetchAndDecryptHistoryPasswords(vaultId, entryId, historyEntries, apiBase) {
     apiBase ??= apiBaseUrl();
-    if (!currentVault?.key) {
-        throw new Error("Vault non ouvert (clé AES absente).");
-    }
-
-    if (String(currentVault.id) !== String(vaultId)) {
-        throw new Error(`Vault ouvert = ${currentVault.id}, mais on tente de déchiffrer vaultId = ${vaultId}`);
-    }
+    ensureVaultOpen(vaultId);
 
     try {
         console.log(`Récupération des mots de passe historiques pour l'entrée ${entryId}...`);
@@ -532,11 +480,7 @@ export async function fetchAndDecryptHistoryPasswords(vaultId, entryId, historyE
             
             try {
                 // Déchiffrement côté client
-                const c  = asU8(cypherData.cypher);
-                const t  = asU8(cypherData.cypherTag);
-                const iv = asU8(cypherData.cypherIv);
-                
-                const clearPwd = await decFieldWithVaultKey(c, t, iv, `${ns}|field:password`);
+                const clearPwd = await decryptCypherObj(cypherData, `${ns}|field:password`);
 
                 // Stockage en RAM JS
                 storePassword(passwordId, clearPwd);

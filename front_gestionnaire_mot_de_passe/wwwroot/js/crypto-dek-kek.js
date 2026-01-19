@@ -13,6 +13,31 @@ import { apiBaseUrl } from "./crypto-config.js";
 const DEFAULT_PBKDF2_ITERATIONS = 600000;
 
 /**
+ * Dérive une KEK (Key Encryption Key) depuis un mot de passe avec PBKDF2
+ * @param {string} password - Mot de passe maître
+ * @param {string} kekSaltB64 - Salt en base64
+ * @param {number} iterations - Nombre d'itérations PBKDF2
+ * @returns {Promise<CryptoKey>} KEK dérivée
+ */
+async function deriveKEK(password, kekSaltB64, iterations = DEFAULT_PBKDF2_ITERATIONS) {
+    const pwKey = await crypto.subtle.importKey(
+        "raw",
+        enc.encode(password),
+        { name: "PBKDF2" },
+        false,
+        ["deriveKey"]
+    );
+
+    return await crypto.subtle.deriveKey(
+        { name: "PBKDF2", hash: "SHA-256", salt: b64d(kekSaltB64), iterations },
+        pwKey,
+        { name: "AES-GCM", length: 256 },
+        false,
+        ["encrypt", "decrypt"]
+    );
+}
+
+/**
  * Génère une nouvelle DEK (Data Encryption Key) aléatoire
  * @returns {Promise<CryptoKey>} Clé AES-GCM 256 bits
  */
@@ -108,21 +133,7 @@ export async function createVaultWithDEK(iterations = 600000, apiBase) {
     const kekSaltB64 = b64(kekSalt);
     
     // Dérivation de la KEK depuis le mot de passe avec PBKDF2
-    const pwKey = await crypto.subtle.importKey(
-        "raw",
-        enc.encode(password),
-        { name: "PBKDF2" },
-        false,
-        ["deriveKey"]
-    );
-
-    const kek = await crypto.subtle.deriveKey(
-        { name: "PBKDF2", hash: "SHA-256", salt: kekSalt, iterations },
-        pwKey,
-        { name: "AES-GCM", length: 256 },
-        false,
-        ["encrypt", "decrypt"]
-    );
+    const kek = await deriveKEK(password, kekSaltB64, iterations);
 
     // Génération de la DEK (clé magique)
     const dek = await generateDEK();
@@ -220,21 +231,7 @@ export async function openVaultWithDEKFromModal(vaultId, inputId, vaultSaltB64, 
         const kekIterationsToUse = vault.kekIterations ?? iterations ?? DEFAULT_PBKDF2_ITERATIONS;
 
         // Dérivation de la KEK
-        const pwKey = await crypto.subtle.importKey(
-            "raw",
-            enc.encode(password),
-            { name: "PBKDF2" },
-            false,
-            ["deriveKey"]
-        );
-
-        const kek = await crypto.subtle.deriveKey(
-            { name: "PBKDF2", hash: "SHA-256", salt: b64d(kekSaltToUse), iterations: kekIterationsToUse },
-            pwKey,
-            { name: "AES-GCM", length: 256 },
-            false,
-            ["encrypt", "decrypt"]
-        );
+        const kek = await deriveKEK(password, kekSaltToUse, kekIterationsToUse);
 
         // Unwrap de la DEK
         const dek = await unwrapDEK(
@@ -285,21 +282,7 @@ export async function changeVaultPassword(vaultId, oldPassword, newPassword, api
     const { wrappedDekB64, dekIvB64, dekTagB64 } = vault;
 
     // Dérivation de l'ANCIENNE KEK avec le salt KEK et les iterations PBKDF2
-    const oldPwKey = await crypto.subtle.importKey(
-        "raw",
-        enc.encode(oldPassword),
-        { name: "PBKDF2" },
-        false,
-        ["deriveKey"]
-    );
-
-    const oldKek = await crypto.subtle.deriveKey(
-        { name: "PBKDF2", hash: "SHA-256", salt: b64d(kekSaltB64), iterations: kekIterations },
-        oldPwKey,
-        { name: "AES-GCM", length: 256 },
-        false,
-        ["encrypt", "decrypt"]
-    );
+    const oldKek = await deriveKEK(oldPassword, kekSaltB64, kekIterations);
 
     // Unwrap de la DEK avec l'ancienne KEK
     let dek;
@@ -310,21 +293,7 @@ export async function changeVaultPassword(vaultId, oldPassword, newPassword, api
     }
 
     // Dérivation de la NOUVELLE KEK avec les mêmes paramètres PBKDF2
-    const newPwKey = await crypto.subtle.importKey(
-        "raw",
-        enc.encode(newPassword),
-        { name: "PBKDF2" },
-        false,
-        ["deriveKey"]
-    );
-
-    const newKek = await crypto.subtle.deriveKey(
-        { name: "PBKDF2", hash: "SHA-256", salt: b64d(kekSaltB64), iterations: kekIterations },
-        newPwKey,
-        { name: "AES-GCM", length: 256 },
-        false,
-        ["encrypt", "decrypt"]
-    );
+    const newKek = await deriveKEK(newPassword, kekSaltB64, kekIterations);
 
     // Re-wrapping de la DEK avec la nouvelle KEK
     const { wrappedDek: newWrappedDek, iv: newIv, tag: newTag } = await wrapDEK(dek, newKek);

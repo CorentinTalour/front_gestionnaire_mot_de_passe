@@ -11,7 +11,7 @@ export { enc, b64, b64d, TAG_BYTES, asU8 } from './crypto-utils.js';
 export { setApiAccessToken, authHeaders } from './crypto-auth.js';
 
 // Gestion du vault en mémoire
-export { currentVault, isVaultOpen, touchVault, lockNow, clearVaultList } from './crypto-vault-session.js';
+export { currentVault, isVaultOpen, touchVault, lockNow, clearVaultList, ensureVaultOpen } from './crypto-vault-session.js';
 
 export { PasswordStrengthMeter } from "./crypto-utils.js";
 
@@ -23,7 +23,8 @@ export {
     joinCtAndTag, 
     encFieldWithVaultKey, 
     decFieldWithVaultKey, 
-    makeCypherObj 
+    makeCypherObj,
+    decryptCypherObj
 } from './crypto-encryption.js';
 
 // Gestion des vaults

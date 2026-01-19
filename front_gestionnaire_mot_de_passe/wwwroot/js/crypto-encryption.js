@@ -85,3 +85,16 @@ export async function makeCypherObj(value, aad) {
     };
 }
 
+/**
+ * Déchiffre un objet CypherData (structure avec cypher/baseCypher, cypherTag/baseCypherTag, cypherIv/baseCypherIv)
+ * @param {Object} obj - Objet CypherData
+ * @param {string} aad - Données d'authentification additionnelles
+ * @returns {Promise<string>} Texte déchiffré
+ */
+export async function decryptCypherObj(obj, aad) {
+    if (!obj) return "";
+    const c  = typeof obj.cypher === 'string' ? b64d(obj.cypher) : (obj.cypher ?? obj.baseCypher);
+    const t  = typeof obj.cypherTag === 'string' ? b64d(obj.cypherTag) : (obj.cypherTag ?? obj.baseCypherTag);
+    const iv = typeof obj.cypherIv === 'string' ? b64d(obj.cypherIv) : (obj.cypherIv ?? obj.baseCypherIv);
+    return await decFieldWithVaultKey(c, t, iv, aad);
+}

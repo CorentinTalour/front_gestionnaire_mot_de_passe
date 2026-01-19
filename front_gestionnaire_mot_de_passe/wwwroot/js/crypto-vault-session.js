@@ -19,6 +19,21 @@ let _autoLockTimer = /** @type {ReturnType<typeof setTimeout>|null} */ (null);
 let _autoLockMsDefault = 300000;
 
 /**
+ * Vérifie que le vault est ouvert et correspond au vaultId fourni
+ * @param {number} [vaultId] - ID du vault attendu (optionnel)
+ * @throws {Error} Si le vault n'est pas ouvert ou ne correspond pas
+ */
+export function ensureVaultOpen(vaultId) {
+    if (!currentVault?.key) {
+        throw new Error("Vault non ouvert (clé AES absente).");
+    }
+    
+    if (vaultId != null && String(currentVault.id) !== String(vaultId)) {
+        throw new Error(`Vault ouvert = ${currentVault.id}, mais on tente d'accéder au vaultId = ${vaultId}`);
+    }
+}
+
+/**
  * Annule le timer de verrouillage automatique en cours
  */
 function _clearAutoLock() {
