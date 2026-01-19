@@ -137,8 +137,18 @@
         }
         catch (Exception ex)
         {
-            _error = ex.Message;
+            _error = CleanJsErrorMessage(ex.Message);
         }
+    }
+    
+    private static string CleanJsErrorMessage(string message)
+    {
+        if (string.IsNullOrWhiteSpace(message))
+            return "Une erreur est survenue.";
+        
+        var firstLine = message.Split('\n')[0];
+        
+        return firstLine.Replace("Error:", "").Trim();
     }
     
     private async Task CloseModal()
