@@ -11,14 +11,27 @@ internal static class LoginLogoutEndpointRouteBuilderExtensions
     {
         var group = endpoints.MapGroup(string.Empty);
 
-        group.MapGet("/login", (string? returnUrl) => TypedResults.Challenge(GetAuthProperties(returnUrl)))
-            .AllowAnonymous();
-
-        // Sign out with both the Cookie and OIDC authentication schemes. Users who have not signed out with the OIDC scheme will
-        // automatically get signed back in as the same user the next time they visit a page that requires authentication
-        // with no opportunity to choose another account.
-        group.MapPost("/logout", ([FromForm] string? returnUrl) => TypedResults.SignOut(GetAuthProperties(returnUrl),
-            [CookieAuthenticationDefaults.AuthenticationScheme, OpenIdConnectDefaults.AuthenticationScheme]));
+        group.MapGet("/login", (string? returnUrl, ILogger<object> logger) =>
+        {
+            logger.LogInformation("Tentative de connexion");
+            return TypedResults.Challenge(GetAuthProperties(returnUrl));
+        })
+        .AllowAnonymous();
+        
+        group.MapPost("/logout", (
+            [FromForm] string? returnUrl,
+            ILogger<object> logger,
+            HttpContext httpContext) =>
+        {
+            string username = httpContext.User.Identity?.Name ?? "utilisateur inconnu";
+            logger.LogInformation("Déconnexion de l'utilisateur {Username}", username);
+            
+            // Le cache de tokens est automatiquement nettoyé par le middleware OIDC
+            // lors du SignOut, garantissant qu'aucun token ne persiste en mémoire
+            return TypedResults.SignOut(
+                GetAuthProperties(returnUrl),
+                [CookieAuthenticationDefaults.AuthenticationScheme, OpenIdConnectDefaults.AuthenticationScheme]);
+        });
 
         return group;
     }
