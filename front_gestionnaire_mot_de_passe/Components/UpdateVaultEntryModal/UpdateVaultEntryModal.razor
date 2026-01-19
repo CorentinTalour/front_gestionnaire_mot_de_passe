@@ -48,8 +48,8 @@
             @* <PasswordStrengthMeter Password="@_password" /> *@
 
             <div class="modal-actions">
-                <button @onclick="SubmitUpdateForm">Enregistrer</button>
-                <button @onclick="CloseModal">Annuler</button>
+                <button class="save-button" @onclick="SubmitUpdateForm">Enregistrer</button>
+                <button class="cancel-button" @onclick="CloseModal">Annuler</button>
             </div>
 
             @if (!string.IsNullOrEmpty(_error))

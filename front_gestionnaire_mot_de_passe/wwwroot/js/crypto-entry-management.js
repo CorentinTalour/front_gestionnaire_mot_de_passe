@@ -53,10 +53,27 @@ export async function createEntryFromModal(vaultId, apiBase) {
     if (!(urlEl instanceof HTMLInputElement)) throw new Error("#ce-url introuvable");
     if (!(notesEl instanceof HTMLTextAreaElement)) throw new Error("#ce-notes introuvable");
 
-    const username = userEl.value ?? "";
+    const username = userEl.value.trim();
+    const password = pwdEl.value.trim();
+    const url = urlEl.value.trim();
+    const notes = notesEl.value.trim();
+
+    if (!username) {
+        throw new Error("Le nom d’utilisateur est obligatoire.");
+    }
+
+    if (!password) {
+        throw new Error("Le mot de passe est obligatoire.");
+    }
+
+    if (!url) {
+        throw new Error("L'URL de obligatoire.");
+    }
+    
+    /*const username = userEl.value ?? "";
     const password = pwdEl.value ?? "";
     const url = urlEl.value ?? "";
-    const notes = notesEl.value ?? "";
+    const notes = notesEl.value ?? "";*/
 
     // Vérifie que la clé de vault est bien en RAM
     if (!currentVault?.key || currentVault.id == null) {
@@ -69,8 +86,7 @@ export async function createEntryFromModal(vaultId, apiBase) {
     const passwordCypherObj = await makeCypherObj(password, `${ns}|field:password`);
     const urlCypherObj = await makeCypherObj(url, `${ns}|field:url`);
     const noteCypherObj = await makeCypherObj(notes, `${ns}|field:notes`);
-
-
+    
     const nomCypherObj = await makeCypherObj(username, `${ns}|field:name`);
 
     // Payload conforme à PostEntryObj
