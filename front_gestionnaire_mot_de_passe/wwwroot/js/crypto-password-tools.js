@@ -79,10 +79,18 @@ export async function copyDomTextToClipboard(elementId) {
         ? clearPwd
         : (document.getElementById(elementId)?.textContent ?? "");
 
-    if (!textToCopy) return;
+    if (!textToCopy) {
+        console.error('Impossible de copier - aucun texte trouvé pour:', elementId);
+        return;
+    }
 
-    await navigator.clipboard.writeText(textToCopy);
-    touchVault();
+    try {
+        await navigator.clipboard.writeText(textToCopy);
+        touchVault();
+    } catch (error) {
+        console.error('Erreur lors de la copie dans le presse-papiers:', error);
+        throw error;
+    }
 }
 
 /**

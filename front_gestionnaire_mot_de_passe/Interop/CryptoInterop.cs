@@ -46,7 +46,7 @@ public class CryptoInterop
             // Petit délai pour s'assurer que le circuit Blazor est établi
             await Task.Delay(50);
             
-            var url = new Uri(new Uri(_nav.BaseUri), "js/crypto.js?v=104").ToString();
+            var url = new Uri(new Uri(_nav.BaseUri), "js/crypto.js?v=107").ToString();
             _mod = await _js.InvokeAsync<IJSObjectReference>("import", url);
             
             _initializationTcs.SetResult(_mod);

@@ -17,9 +17,10 @@ const DEFAULT_PBKDF2_ITERATIONS = 600000;
  * @param {string} password - Mot de passe maître
  * @param {string} kekSaltB64 - Salt en base64
  * @param {number} iterations - Nombre d'itérations PBKDF2
+ * @param {boolean} extractable - Si la clé doit être extractable (false par défaut pour sécurité)
  * @returns {Promise<CryptoKey>} KEK dérivée
  */
-async function deriveKEK(password, kekSaltB64, iterations = DEFAULT_PBKDF2_ITERATIONS) {
+async function deriveKEK(password, kekSaltB64, iterations = DEFAULT_PBKDF2_ITERATIONS, extractable = false) {
     const pwKey = await crypto.subtle.importKey(
         "raw",
         enc.encode(password),
@@ -32,19 +33,20 @@ async function deriveKEK(password, kekSaltB64, iterations = DEFAULT_PBKDF2_ITERA
         { name: "PBKDF2", hash: "SHA-256", salt: b64d(kekSaltB64), iterations },
         pwKey,
         { name: "AES-GCM", length: 256 },
-        false,
+        extractable,
         ["encrypt", "decrypt"]
     );
 }
 
 /**
  * Génère une nouvelle DEK (Data Encryption Key) aléatoire
+ * @param {boolean} extractable - Si la clé doit être extractable (true pour le wrapping initial)
  * @returns {Promise<CryptoKey>} Clé AES-GCM 256 bits
  */
-async function generateDEK() {
+async function generateDEK(extractable = true) {
     return await crypto.subtle.generateKey(
         { name: "AES-GCM", length: 256 },
-        true,  // extractable pour pouvoir la wrapper
+        extractable,  // extractable UNIQUEMENT lors de la création pour le wrapping initial
         ["encrypt", "decrypt"]
     );
 }
@@ -238,7 +240,8 @@ export async function openVaultWithDEKFromModal(vaultId, inputId, vaultSaltB64, 
             vault.wrappedDekB64,
             vault.dekIvB64,
             vault.dekTagB64,
-            kek
+            kek,
+            false
         );
 
         // Stockage de la DEK en mémoire (pas la KEK !)
@@ -330,8 +333,10 @@ export async function changeVaultPassword(vaultId, oldPassword, newPassword, api
         }
     }
 
-    // Mise à jour de la session en mémoire avec la DEK déchiffrée
-    setCurrentVault(vaultId, dek);
+    // Mise à jour de la session en mémoire avec une DEK
+    // On ré-unwrap la DEK avec la nouvelle KEK
+    const nonExtractableDek = await unwrapDEK(newWrappedDek, newIv, newTag, newKek, false);
+    setCurrentVault(vaultId, nonExtractableDek);
 
     return { ok: true };
 }

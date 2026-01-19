@@ -2,7 +2,7 @@
 // UTILITAIRES CRYPTOGRAPHIQUES - Chiffrement/Déchiffrement
 // ==============================
 
-import { enc, b64, TAG_BYTES } from './crypto-utils.js';
+import { enc, b64, b64d, TAG_BYTES } from './crypto-utils.js';
 import { currentVault, touchVault } from './crypto-vault-session.js';
 
 /**
