@@ -1,4 +1,5 @@
 @inject Interop.CryptoInterop Crypto
+@inject IJSRuntime JS
 
 @if (IsVisible)
 {
@@ -25,7 +26,7 @@
                 </div>
 
                 <div class="modal-actions">
-                    <button @onclick="SubmitUpdateNameForm">Mettre à jour le nom</button>
+                    <button  @onclick="SubmitUpdateNameForm">Mettre à jour le nom</button>
                     <button @onclick="CloseModal">Annuler</button>
                 </div>
             }
@@ -73,17 +74,10 @@
 
     private async Task SubmitUpdateNameForm()
     {
-        try
-        {
-            if (OnUpdated.HasDelegate)
-                await OnUpdated.InvokeAsync(VaultId);
-
-            await CloseModal();
-        }
-        catch (Exception ex)
-        {
-            Console.Error.WriteLine("Erreur mise à jour nom vault:  " + ex.Message);
-        }
+        await JS.InvokeVoidAsync(
+            "alert",
+            "🔒 Le bouton est désactivé car la modification du mot du nom n’est pas encore disponible."
+        );
     }
 
     private async Task SubmitChangePasswordForm()
