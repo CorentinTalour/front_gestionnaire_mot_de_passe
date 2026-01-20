@@ -3,10 +3,35 @@
 // ==============================
 
 /**
- * Vault actuellement ouvert en mémoire
- * Contient l'ID du vault et la clé AES dérivée
+ * Stockage sécurisé des clés cryptographiques
+ * Utilise un Symbol privé et WeakMap pour empêcher l'accès direct aux clés
  */
-export let currentVault = {id: null, key: /** @type {CryptoKey|null} */(null)};
+const _vaultKeySymbol = Symbol('vaultKey');
+const _vaultStore = new WeakMap();
+let _currentVaultContainer = null;
+let _currentVaultId = null;
+
+/**
+ * Vault actuellement ouvert en mémoire (lecture seule)
+ * La clé AES n'est plus directement accessible
+ */
+export const currentVault = {
+    get id() {
+        return _currentVaultId;
+    },
+    get key() {
+        if (!_currentVaultContainer) return null;
+        const container = _vaultStore.get(_currentVaultContainer);
+        return container ? container[_vaultKeySymbol] : null;
+    },
+    // Empêche la modification directe
+    set id(value) {
+        throw new Error("Modification directe interdite. Utilisez setCurrentVault()");
+    },
+    set key(value) {
+        throw new Error("Modification directe interdite. Utilisez setCurrentVault()");
+    }
+};
 
 /**
  * Timer pour le verrouillage automatique du vault
@@ -74,12 +99,19 @@ export function touchVault() {
  * Efface la clé de la mémoire et nettoie l'interface
  */
 export function lockNow() {
-    // Effacement de la clé cryptographique
-    if (currentVault.key) {
-        currentVault.key = null;
+    // Effacement sécurisé de la clé cryptographique
+    if (_currentVaultContainer) {
+        const container = _vaultStore.get(_currentVaultContainer);
+        if (container) {
+            // Suppression de la clé du conteneur
+            delete container[_vaultKeySymbol];
+        }
+        // Suppression du conteneur de la WeakMap
+        _vaultStore.delete(_currentVaultContainer);
+        _currentVaultContainer = null;
     }
     
-    currentVault.id = null;
+    _currentVaultId = null;
     _clearAutoLock();
     clearVaultList();
 }
@@ -101,13 +133,28 @@ export function setAutoLockDelay(ms) {
 }
 
 /**
- * Met à jour currentVault (utilisé par d'autres modules)
+ * Met à jour currentVault de manière sécurisée
  * @param {number} id - ID du vault
- * @param {CryptoKey} key - Clé AES du vault
+ * @param {CryptoKey} key - Clé AES du vault (DOIT être non-extractable)
  */
 export function setCurrentVault(id, key) {
-    currentVault.id = id;
-    currentVault.key = key;
+    // Validation : la clé ne doit PAS être extractable
+    if (key && key.extractable === true) {
+        console.error("SÉCURITÉ: Tentative de stockage d'une clé extractable détectée!");
+        throw new Error("Les clés cryptographiques doivent être non-extractables (extractable=false)");
+    }
+    
+    // Nettoyage de l'ancien vault si existant
+    if (_currentVaultContainer) {
+        lockNow();
+    }
+    
+    // Création d'un nouveau conteneur sécurisé
+    _currentVaultContainer = { id };
+    const container = { [_vaultKeySymbol]: key };
+    _vaultStore.set(_currentVaultContainer, container);
+    _currentVaultId = id;
+    
     touchVault();
 }
 

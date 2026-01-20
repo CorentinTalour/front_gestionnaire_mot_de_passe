@@ -17,10 +17,15 @@ const DEFAULT_PBKDF2_ITERATIONS = 600000;
  * @param {string} password - Mot de passe maître
  * @param {string} kekSaltB64 - Salt en base64
  * @param {number} iterations - Nombre d'itérations PBKDF2
- * @param {boolean} extractable - Si la clé doit être extractable (false par défaut pour sécurité)
+ * @param {boolean} extractable - Si la clé doit être extractable
  * @returns {Promise<CryptoKey>} KEK dérivée
  */
 async function deriveKEK(password, kekSaltB64, iterations = DEFAULT_PBKDF2_ITERATIONS, extractable = false) {
+    if (extractable === true) {
+        console.error("SÉCURITÉ: Tentative de créer une KEK extractable bloquée!");
+        extractable = false;
+    }
+    
     const pwKey = await crypto.subtle.importKey(
         "raw",
         enc.encode(password),
@@ -33,45 +38,36 @@ async function deriveKEK(password, kekSaltB64, iterations = DEFAULT_PBKDF2_ITERA
         { name: "PBKDF2", hash: "SHA-256", salt: b64d(kekSaltB64), iterations },
         pwKey,
         { name: "AES-GCM", length: 256 },
-        extractable,
+        false,
         ["encrypt", "decrypt"]
     );
 }
 
 /**
- * Génère une nouvelle DEK (Data Encryption Key) aléatoire
- * La clé est extractable UNIQUEMENT pour le wrapping initial, puis détruite
- * @returns {Promise<CryptoKey>} Clé AES-GCM 256 bits (temporairement extractable)
+ * Génère une nouvelle DEK (Data Encryption Key) aléatoire sous forme de bytes bruts
+ * Les bytes peuvent être wrappés sans jamais créer de clé extractable
+ * @returns {Uint8Array} 32 bytes aléatoires (256 bits) pour la DEK
  */
-async function generateDEK() {
-    // extractable=true UNIQUEMENT pour permettre exportKey lors du wrapping initial
-    // La clé est immédiatement wrappée puis la version extractable est détruite
-    return await crypto.subtle.generateKey(
-        { name: "AES-GCM", length: 256 },
-        true,  // Temporairement extractable pour le wrapping, puis détruite
-        ["encrypt", "decrypt"]
-    );
+function generateDEK() {
+    // SÉCURITÉ: Génération de 32 bytes aléatoires directement
+    return crypto.getRandomValues(new Uint8Array(32));
 }
 
 /**
  * Chiffre (wrap) la DEK avec la KEK (clé dérivée du mot de passe)
- * @param {CryptoKey|ArrayBuffer} dek - La DEK à protéger (CryptoKey extractable ou ArrayBuffer de bytes bruts)
- * @param {CryptoKey} kek - La clé dérivée du mot de passe
+ * SÉCURITÉ: Accepte UNIQUEMENT des bytes bruts (ArrayBuffer/Uint8Array)
+ * @param {ArrayBuffer|Uint8Array} dekBytes - Les bytes bruts de la DEK (32 bytes)
+ * @param {CryptoKey} kek - La clé dérivée du mot de passe (KEK non-extractable)
  * @returns {Promise<{wrappedDek: string, iv: string, tag: string}>}
  */
-async function wrapDEK(dek, kek) {
-    let dekRaw;
-    
-    // Si c'est une CryptoKey, tenter de l'exporter
-    if (dek instanceof CryptoKey) {
-        dekRaw = await crypto.subtle.exportKey("raw", dek);
-    } 
-    // Si c'est déjà un ArrayBuffer ou Uint8Array, l'utiliser directement
-    else if (dek instanceof ArrayBuffer || dek instanceof Uint8Array) {
-        dekRaw = dek;
+async function wrapDEK(dekBytes, kek) {
+    // SÉCURITÉ: On n'accepte QUE des bytes bruts, jamais de CryptoKey
+    if (dekBytes instanceof CryptoKey) {
+        throw new Error("SÉCURITÉ: wrapDEK n'accepte que des bytes bruts (Uint8Array/ArrayBuffer), pas de CryptoKey");
     }
-    else {
-        throw new Error("DEK doit être une CryptoKey ou un ArrayBuffer");
+    
+    if (!(dekBytes instanceof ArrayBuffer || dekBytes instanceof Uint8Array)) {
+        throw new Error("DEK doit être un ArrayBuffer ou Uint8Array");
     }
 
     // Chiffrement avec la KEK
@@ -79,13 +75,13 @@ async function wrapDEK(dek, kek) {
     const ctFull = await crypto.subtle.encrypt(
         { name: "AES-GCM", iv },
         kek,
-        dekRaw
+        dekBytes
     );
 
     const { cipher, tag } = splitCtAndTag(ctFull);
 
     return {
-        wrappedDek:  b64(cipher),
+        wrappedDek: b64(cipher),
         iv: b64(iv),
         tag: b64(tag)
     };
@@ -97,7 +93,7 @@ async function wrapDEK(dek, kek) {
  * @param {string} ivB64 - IV en base64
  * @param {string} tagB64 - Tag GCM en base64
  * @param {CryptoKey} kek - Clé dérivée du mot de passe
- * @returns {Promise<CryptoKey>} DEK déchiffrée
+ * @returns {Promise<CryptoKey>} DEK déchiffrée (NON-EXTRACTABLE)
  */
 async function unwrapDEK(wrappedDekB64, ivB64, tagB64, kek) {
     const cipher = b64d(wrappedDekB64);
@@ -112,14 +108,22 @@ async function unwrapDEK(wrappedDekB64, ivB64, tagB64, kek) {
         full
     );
 
+    // SÉCURITÉ: Convertir en Uint8Array pour permettre l'effacement
+    const dekRawArray = new Uint8Array(dekRaw);
+
     // Import de la DEK
-    return await crypto.subtle.importKey(
+    const dekKey = await crypto.subtle.importKey(
         "raw",
-        dekRaw,
+        dekRawArray,
         { name: "AES-GCM", length: 256 },
         false,
         ["encrypt", "decrypt"]
     );
+    
+    // SÉCURITÉ CRITIQUE: Effacer les bytes bruts immédiatement après l'import
+    dekRawArray.fill(0);
+    
+    return dekKey;
 }
 
 /**
@@ -150,11 +154,14 @@ export async function createVaultWithDEK(iterations = 600000, apiBase) {
     // Dérivation de la KEK depuis le mot de passe avec PBKDF2
     const kek = await deriveKEK(password, kekSaltB64, iterations);
 
-    // Génération de la DEK (clé magique)
-    const dek = await generateDEK();
+    // SÉCURITÉ: Génération de bytes bruts (pas de CryptoKey extractable)
+    const dekBytes = generateDEK();
 
     // Wrapping de la DEK avec la KEK
-    const { wrappedDek, iv, tag } = await wrapDEK(dek, kek);
+    const { wrappedDek, iv, tag } = await wrapDEK(dekBytes, kek);
+
+    // SÉCURITÉ CRITIQUE: Effacement des bytes bruts de la mémoire
+    dekBytes.fill(0);
 
     // Appel API
     // Envoi des paramètres PBKDF2 séparés pour la KEK
@@ -318,11 +325,14 @@ export async function changeVaultPassword(vaultId, oldPassword, newPassword, api
         return { ok: false, error: "Ancien mot de passe incorrect (échec du déchiffrement local de la clé)" };
     }
 
+    // SÉCURITÉ: Convertir en Uint8Array pour permettre l'effacement
+    const dekBytesArray = new Uint8Array(dekRawBytes);
+
     // Dérivation de la NOUVELLE KEK avec les mêmes paramètres PBKDF2
     const newKek = await deriveKEK(newPassword, kekSaltB64, kekIterations);
 
     // Re-wrapping de la DEK (en passant les bytes bruts directement)
-    const { wrappedDek: newWrappedDek, iv: newIv, tag: newTag } = await wrapDEK(dekRawBytes, newKek);
+    const { wrappedDek: newWrappedDek, iv: newIv, tag: newTag } = await wrapDEK(dekBytesArray, newKek);
 
     // Préparation des données à envoyer à l'API
     const requestBody = {
@@ -346,6 +356,9 @@ export async function changeVaultPassword(vaultId, oldPassword, newPassword, api
         const text = await updateRes.text().catch(() => "");
         console.error("Erreur réponse API:", updateRes.status, text);
         
+        // SÉCURITÉ: Effacer les bytes même en cas d'erreur
+        dekBytesArray.fill(0);
+        
         // Essayer de parser la réponse JSON si possible
         try {
             const errorData = JSON.parse(text);
@@ -357,14 +370,18 @@ export async function changeVaultPassword(vaultId, oldPassword, newPassword, api
     }
 
     // Mise à jour de la session en mémoire avec la DEK non-extractable
-    // Les bytes bruts (dekRawBytes) sont réimportés
+    // Les bytes bruts (dekBytesArray) sont réimportés
     const nonExtractableDek = await crypto.subtle.importKey(
         "raw",
-        dekRawBytes,
+        dekBytesArray,
         { name: "AES-GCM", length: 256 },
-        false,
+        false,  // ✅ NON-EXTRACTABLE
         ["encrypt", "decrypt"]
     );
+    
+    // SÉCURITÉ CRITIQUE: Effacer les bytes bruts immédiatement après l'import
+    dekBytesArray.fill(0);
+    
     setCurrentVault(vaultId, nonExtractableDek);
 
     return { ok: true };
