@@ -74,8 +74,12 @@ export function touchVault() {
  * Efface la clé de la mémoire et nettoie l'interface
  */
 export function lockNow() {
+    // Effacement de la clé cryptographique
+    if (currentVault.key) {
+        currentVault.key = null;
+    }
+    
     currentVault.id = null;
-    currentVault.key = null;
     _clearAutoLock();
     clearVaultList();
 }

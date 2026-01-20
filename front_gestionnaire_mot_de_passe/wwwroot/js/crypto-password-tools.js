@@ -73,7 +73,7 @@ export function togglePasswordVisibility(elementId) {
  * @returns {Promise<void>}
  */
 export async function copyDomTextToClipboard(elementId) {
-    const clearPwd = _plainSecretsByElementId.get(elementId);
+    const clearPwd = retrievePassword(elementId);
 
     const textToCopy = (typeof clearPwd === "string" && clearPwd.length > 0)
         ? clearPwd

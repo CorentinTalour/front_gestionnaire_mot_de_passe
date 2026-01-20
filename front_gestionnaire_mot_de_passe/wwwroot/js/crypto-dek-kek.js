@@ -40,26 +40,39 @@ async function deriveKEK(password, kekSaltB64, iterations = DEFAULT_PBKDF2_ITERA
 
 /**
  * Génère une nouvelle DEK (Data Encryption Key) aléatoire
- * @param {boolean} extractable - Si la clé doit être extractable (true pour le wrapping initial)
- * @returns {Promise<CryptoKey>} Clé AES-GCM 256 bits
+ * La clé est extractable UNIQUEMENT pour le wrapping initial, puis détruite
+ * @returns {Promise<CryptoKey>} Clé AES-GCM 256 bits (temporairement extractable)
  */
-async function generateDEK(extractable = true) {
+async function generateDEK() {
+    // extractable=true UNIQUEMENT pour permettre exportKey lors du wrapping initial
+    // La clé est immédiatement wrappée puis la version extractable est détruite
     return await crypto.subtle.generateKey(
         { name: "AES-GCM", length: 256 },
-        extractable,  // extractable UNIQUEMENT lors de la création pour le wrapping initial
+        true,  // Temporairement extractable pour le wrapping, puis détruite
         ["encrypt", "decrypt"]
     );
 }
 
 /**
  * Chiffre (wrap) la DEK avec la KEK (clé dérivée du mot de passe)
- * @param {CryptoKey} dek - La DEK à protéger
+ * @param {CryptoKey|ArrayBuffer} dek - La DEK à protéger (CryptoKey extractable ou ArrayBuffer de bytes bruts)
  * @param {CryptoKey} kek - La clé dérivée du mot de passe
  * @returns {Promise<{wrappedDek: string, iv: string, tag: string}>}
  */
 async function wrapDEK(dek, kek) {
-    // Export de la DEK en raw
-    const dekRaw = await crypto.subtle.exportKey("raw", dek);
+    let dekRaw;
+    
+    // Si c'est une CryptoKey, tenter de l'exporter
+    if (dek instanceof CryptoKey) {
+        dekRaw = await crypto.subtle.exportKey("raw", dek);
+    } 
+    // Si c'est déjà un ArrayBuffer ou Uint8Array, l'utiliser directement
+    else if (dek instanceof ArrayBuffer || dek instanceof Uint8Array) {
+        dekRaw = dek;
+    }
+    else {
+        throw new Error("DEK doit être une CryptoKey ou un ArrayBuffer");
+    }
 
     // Chiffrement avec la KEK
     const iv = crypto.getRandomValues(new Uint8Array(12));
@@ -104,7 +117,7 @@ async function unwrapDEK(wrappedDekB64, ivB64, tagB64, kek) {
         "raw",
         dekRaw,
         { name: "AES-GCM", length: 256 },
-        true,
+        false,
         ["encrypt", "decrypt"]
     );
 }
@@ -287,10 +300,20 @@ export async function changeVaultPassword(vaultId, oldPassword, newPassword, api
     // Dérivation de l'ANCIENNE KEK avec le salt KEK et les iterations PBKDF2
     const oldKek = await deriveKEK(oldPassword, kekSaltB64, kekIterations);
 
-    // Unwrap de la DEK avec l'ancienne KEK
-    let dek;
+    // Déchiffrer la DEK en BYTES BRUTS
+    // Cela permet de re-wrapper sans avoir besoin d'une clé extractable
+    let dekRawBytes;
     try {
-        dek = await unwrapDEK(wrappedDekB64, dekIvB64, dekTagB64, oldKek);
+        const cipher = b64d(wrappedDekB64);
+        const tag = b64d(dekTagB64);
+        const iv = b64d(dekIvB64);
+        const full = joinCtAndTag(cipher, tag);
+
+        dekRawBytes = await crypto.subtle.decrypt(
+            { name: "AES-GCM", iv },
+            oldKek,
+            full
+        );
     } catch (e) {
         return { ok: false, error: "Ancien mot de passe incorrect (échec du déchiffrement local de la clé)" };
     }
@@ -298,8 +321,8 @@ export async function changeVaultPassword(vaultId, oldPassword, newPassword, api
     // Dérivation de la NOUVELLE KEK avec les mêmes paramètres PBKDF2
     const newKek = await deriveKEK(newPassword, kekSaltB64, kekIterations);
 
-    // Re-wrapping de la DEK avec la nouvelle KEK
-    const { wrappedDek: newWrappedDek, iv: newIv, tag: newTag } = await wrapDEK(dek, newKek);
+    // Re-wrapping de la DEK (en passant les bytes bruts directement)
+    const { wrappedDek: newWrappedDek, iv: newIv, tag: newTag } = await wrapDEK(dekRawBytes, newKek);
 
     // Préparation des données à envoyer à l'API
     const requestBody = {
@@ -333,9 +356,15 @@ export async function changeVaultPassword(vaultId, oldPassword, newPassword, api
         }
     }
 
-    // Mise à jour de la session en mémoire avec une DEK
-    // On ré-unwrap la DEK avec la nouvelle KEK
-    const nonExtractableDek = await unwrapDEK(newWrappedDek, newIv, newTag, newKek, false);
+    // Mise à jour de la session en mémoire avec la DEK non-extractable
+    // Les bytes bruts (dekRawBytes) sont réimportés
+    const nonExtractableDek = await crypto.subtle.importKey(
+        "raw",
+        dekRawBytes,
+        { name: "AES-GCM", length: 256 },
+        false,
+        ["encrypt", "decrypt"]
+    );
     setCurrentVault(vaultId, nonExtractableDek);
 
     return { ok: true };
