@@ -1,5 +1,7 @@
 @inject Interop.CryptoInterop Crypto
+@using front_gestionnaire_mot_de_passe.Interop
 @using front_gestionnaire_mot_de_passe.Models
+@inject CryptoInterop CryptoInterop;
 
 
 @if (IsVisible)
@@ -18,6 +20,7 @@
 
                 <div style="display:flex; gap:.5rem; align-items:center;">
                     <input id="ce-password"
+                           @ref="_passwordInputRef"
                            type="@(_showPassword ? "text" : "password")"
                            autocomplete="new-password"
                            style="flex:1;" />
@@ -25,8 +28,12 @@
                     <button class="show_password_button" type="button" @onclick="TogglePasswordVisibility">
                         @(_showPassword ? "🙈" : "👁️")
                     </button>
-
                     
+                </div>
+                
+                <div class="password-strength-container">
+                    <div class="strength-bar"></div>
+                    <p class="strength-text"></p>
                 </div>
                 
             </div>
@@ -44,8 +51,6 @@
                 <label>Notes</label>
                 <textarea id="ce-notes" rows="3"></textarea>
             </div>
-            
-            @* <PasswordStrengthMeter Password="@_password" /> *@
 
             <div class="modal-actions">
                 <button class="save-button" @onclick="SubmitUpdateForm">Enregistrer</button>
@@ -66,6 +71,7 @@
     [Parameter] public EventCallback OnUpdated { get; set; }
     [Parameter] public int EntryId { get; set; }
     [Parameter] public VaultEntry? Entry { get; set; }
+    private ElementReference _passwordInputRef;
     
     private string? _error;
     private bool _showPassword;
@@ -90,6 +96,7 @@
             {
                 // Petit délai pour s'assurer que le DOM est prêt
                 await Task.Delay(100);
+                await CryptoInterop.InitPasswordStrengthMeterAsync(_passwordInputRef);
                 await Crypto.FillUpdateModalAsync(Entry.VaultId, Entry);
             }
             catch (Exception ex)

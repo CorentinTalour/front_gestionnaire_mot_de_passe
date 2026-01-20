@@ -127,5 +127,7 @@ export function generateAndFillPassword(elementId, length) {
     const pwd = generateSecurePassword(length);
     const el = document.getElementById(elementId);
     if (el) el.value = pwd;
+
+    el.dispatchEvent(new Event("input", { bubbles: true }));
 }
 
