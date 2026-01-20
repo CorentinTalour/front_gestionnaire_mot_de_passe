@@ -95,6 +95,52 @@
 
 #ce-notes {
     width: 100%;
+} 
+
+/*indicateur de la force du mot de pase */
+
+.password-strength-container {
+    margin-top: 6px;
+    height: 10px;
+}
+
+.strength-bar {
+    height: 6px;
+    width: 0;
+    border-radius: 4px;
+    transition: width 0.3s ease, background-color 0.3s ease;
+}
+
+/* États */
+
+.strength-bar.empty {
+    width: 0;
+    background-color: transparent;
+}
+
+.strength-bar.weak {
+    width: 25%;
+    background-color: #e74c3c; /* rouge */
+}
+
+.strength-bar.medium {
+    width: 50%;
+    background-color: #f39c12; /* orange */
+}
+
+.strength-bar.strong {
+    width: 75%;
+    background-color: #27ae60; /* vert */
+}
+
+.strength-bar.very-strong {
+    width: 100%;
+    background-color: #2ecc71; /* vert foncé */
+}
+
+.strength-text {
+    margin-top: 4px;
+    font-size: 0.9rem;
 }
 
 
