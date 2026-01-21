@@ -173,4 +173,3 @@ export function armAutoLock(ms) {
 export function getAutoLockDelay() {
     return _autoLockMsDefault;
 }
-

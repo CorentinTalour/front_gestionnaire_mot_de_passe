@@ -85,4 +85,3 @@ export function PasswordStrengthMeter(inputElement) {
 
     input.addEventListener("input", input._strengthHandler);
 }
-

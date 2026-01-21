@@ -306,7 +306,7 @@ export async function decryptEntryToDom(vaultId, entry, ids) {
     setText(ids.usernameId, await decryptCypherObj(entry.userNameCypher, `${ns}|field:username`));
     const clearPwd = await decryptCypherObj(entry.passwordCypher, `${ns}|field:password`);
 
-    // on garde le clair en RAM JS (pas dans le DOM)
+    // on garde le clair en RAM JS
     storePassword(ids.passwordId, clearPwd);
 
     // affichage masqué par défaut
@@ -319,7 +319,6 @@ export async function decryptEntryToDom(vaultId, entry, ids) {
 
 /**
  * Récupère le mot de passe chiffré depuis l'API et le déchiffre côté client
- * TOUT se passe côté client : le mot de passe clair ne transite JAMAIS côté serveur C#
  * @param {number} vaultId - ID du vault
  * @param {number} entryId - ID de l'entrée
  * @param {string} passwordId - ID de l'élément DOM où afficher le mot de passe
@@ -521,4 +520,3 @@ export async function fetchAndDecryptHistoryPasswords(vaultId, entryId, historyE
         throw error;
     }
 }
-

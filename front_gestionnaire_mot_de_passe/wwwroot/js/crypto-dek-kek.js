@@ -1,5 +1,5 @@
 // ==============================
-// GESTION DE LA CLÉ MAGIQUE (DEK/KEK)
+// GESTION DE LA CLÉ (DEK/KEK)
 // ==============================
 
 import { enc, b64, b64d } from './crypto-utils.js';
@@ -61,7 +61,7 @@ function generateDEK() {
  * @returns {Promise<{wrappedDek: string, iv: string, tag: string}>}
  */
 async function wrapDEK(dekBytes, kek) {
-    // SÉCURITÉ: On n'accepte QUE des bytes bruts, jamais de CryptoKey
+    // SÉCURITÉ: On n'accepte que des bytes bruts
     if (dekBytes instanceof CryptoKey) {
         throw new Error("SÉCURITÉ: wrapDEK n'accepte que des bytes bruts (Uint8Array/ArrayBuffer), pas de CryptoKey");
     }
@@ -108,7 +108,7 @@ async function unwrapDEK(wrappedDekB64, ivB64, tagB64, kek) {
         full
     );
 
-    // SÉCURITÉ: Convertir en Uint8Array pour permettre l'effacement
+    // Convertir en Uint8Array pour permettre l'effacement
     const dekRawArray = new Uint8Array(dekRaw);
 
     // Import de la DEK
@@ -120,7 +120,7 @@ async function unwrapDEK(wrappedDekB64, ivB64, tagB64, kek) {
         ["encrypt", "decrypt"]
     );
     
-    // SÉCURITÉ CRITIQUE: Effacer les bytes bruts immédiatement après l'import
+    // Effacer les bytes bruts immédiatement après l'import
     dekRawArray.fill(0);
     
     return dekKey;
@@ -128,7 +128,6 @@ async function unwrapDEK(wrappedDekB64, ivB64, tagB64, kek) {
 
 /**
  * Crée un nouveau vault avec système DEK/KEK
- * REMPLACE createVaultFromModal
  * @param {number} iterations - Nombre d'itérations PBKDF2
  * @param {string} apiBase - URL de base de l'API
  * @returns {Promise<Object>} Données du vault créé
@@ -154,13 +153,13 @@ export async function createVaultWithDEK(iterations = 600000, apiBase) {
     // Dérivation de la KEK depuis le mot de passe avec PBKDF2
     const kek = await deriveKEK(password, kekSaltB64, iterations);
 
-    // SÉCURITÉ: Génération de bytes bruts (pas de CryptoKey extractable)
+    // Génération de bytes bruts
     const dekBytes = generateDEK();
 
     // Wrapping de la DEK avec la KEK
     const { wrappedDek, iv, tag } = await wrapDEK(dekBytes, kek);
 
-    // SÉCURITÉ CRITIQUE: Effacement des bytes bruts de la mémoire
+    // Effacement des bytes bruts de la mémoire
     dekBytes.fill(0);
 
     // Appel API
@@ -175,8 +174,8 @@ export async function createVaultWithDEK(iterations = 600000, apiBase) {
             wrappedDekB64: wrappedDek,
             dekIvB64: iv,
             dekTagB64: tag,
-            kekSaltB64: kekSaltB64,      // Salt pour PBKDF2
-            kekIterations: iterations     // Iterations pour PBKDF2
+            kekSaltB64: kekSaltB64,
+            kekIterations: iterations
         })
     });
 
@@ -264,7 +263,7 @@ export async function openVaultWithDEKFromModal(vaultId, inputId, vaultSaltB64, 
             false
         );
 
-        // Stockage de la DEK en mémoire (pas la KEK !)
+        // Stockage de la DEK en mémoire
         setCurrentVault(vaultId, dek);
 
         el.value = "";
@@ -325,13 +324,13 @@ export async function changeVaultPassword(vaultId, oldPassword, newPassword, api
         return { ok: false, error: "Ancien mot de passe incorrect (échec du déchiffrement local de la clé)" };
     }
 
-    // SÉCURITÉ: Convertir en Uint8Array pour permettre l'effacement
+    // Convertir en Uint8Array pour permettre l'effacement
     const dekBytesArray = new Uint8Array(dekRawBytes);
 
-    // Dérivation de la NOUVELLE KEK avec les mêmes paramètres PBKDF2
+    // Dérivation de la nouvelle KEK avec les mêmes paramètres PBKDF2
     const newKek = await deriveKEK(newPassword, kekSaltB64, kekIterations);
 
-    // Re-wrapping de la DEK (en passant les bytes bruts directement)
+    // Re-wrapping de la DEK
     const { wrappedDek: newWrappedDek, iv: newIv, tag: newTag } = await wrapDEK(dekBytesArray, newKek);
 
     // Préparation des données à envoyer à l'API
@@ -345,7 +344,6 @@ export async function changeVaultPassword(vaultId, oldPassword, newPassword, api
         KekIterations: kekIterations
     };
 
-    // Envoi au serveur
     const updateRes = await fetch(`${apiBase}/Vault/${vaultId}/change-password`, {
         method: "PUT",
         headers: { "Content-Type": "application/json", ...authHeaders() },
@@ -356,10 +354,10 @@ export async function changeVaultPassword(vaultId, oldPassword, newPassword, api
         const text = await updateRes.text().catch(() => "");
         console.error("Erreur réponse API:", updateRes.status, text);
         
-        // SÉCURITÉ: Effacer les bytes même en cas d'erreur
+        // Effacer les bytes même en cas d'erreur
         dekBytesArray.fill(0);
         
-        // Essayer de parser la réponse JSON si possible
+        // Essayer de parser la réponse JSON
         try {
             const errorData = JSON.parse(text);
             console.error("Détails erreur:", errorData);
@@ -375,11 +373,11 @@ export async function changeVaultPassword(vaultId, oldPassword, newPassword, api
         "raw",
         dekBytesArray,
         { name: "AES-GCM", length: 256 },
-        false,  // ✅ NON-EXTRACTABLE
+        false,
         ["encrypt", "decrypt"]
     );
     
-    // SÉCURITÉ CRITIQUE: Effacer les bytes bruts immédiatement après l'import
+    // Effacer les bytes bruts immédiatement après l'import
     dekBytesArray.fill(0);
     
     setCurrentVault(vaultId, nonExtractableDek);
@@ -435,4 +433,3 @@ export async function changeVaultPasswordFromModal(vaultId, apiBase) {
     alert("Mot de passe changé avec succès !");
     return true;
 }
-

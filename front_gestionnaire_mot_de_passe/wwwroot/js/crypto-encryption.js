@@ -81,7 +81,6 @@ export async function makeCypherObj(value, aad) {
         baseCypher: b64(cipher),
         baseCypherTag: b64(tag),
         baseCypherIv: b64(iv)
-        // ne pas envoyer "aad" si ton modèle C# ne le prévoit pas
     };
 }
 

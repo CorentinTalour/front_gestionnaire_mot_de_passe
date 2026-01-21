@@ -24,7 +24,6 @@ export async function openVault(vaultId, password, autoLockMs = 300000) {
     if (!check.ok) return {ok: false, error: "Mot de passe maître invalide."};
 
     const pwKey = await crypto.subtle.importKey("raw", enc.encode(password), {name: "PBKDF2"}, false, ["deriveKey"]);
-    // SÉCURITÉ: extractable=false pour empêcher l'extraction de la clé via DevTools
     const aesKey = await crypto.subtle.deriveKey(
         {name: "PBKDF2", hash: "SHA-256", salt: b64d(p.vaultSaltB64), iterations: p.iterations},
         pwKey,
@@ -55,7 +54,7 @@ export async function openVaultFromInput(vaultId, inputId, autoLockMs = 300000) 
 
 /**
  * Vérifie le mot de passe maître d'un vault auprès du serveur
- * N'ouvre PAS le vault, uniquement validation
+ * N'ouvre pas le vault, uniquement validation
  * @param {number} vaultId - ID du vault
  * @param {string} password - Mot de passe à vérifier
  * @param {string} apiBase - URL de base de l'API
@@ -89,7 +88,7 @@ export async function verifyVaultPasswordServer(vaultId, password, apiBase) {
 
 /**
  * Dérive et stocke la clé AES en RAM à partir du salt et iterations
- * N'effectue PAS de vérification serveur
+ * N'effectue pas de vérification serveur
  * @param {number} vaultId - ID du vault
  * @param {string} password - Mot de passe maître
  * @param {string} vaultSaltB64 - Salt en base64
@@ -102,12 +101,11 @@ export async function armVaultSession(vaultId, password, vaultSaltB64, iteration
     }
 
     const pwKey = await crypto.subtle.importKey("raw", enc.encode(password), {name: "PBKDF2"}, false, ["deriveKey"]);
-    // SÉCURITÉ: extractable=false pour empêcher l'extraction de la clé via DevTools
     const aesKey = await crypto.subtle.deriveKey(
         {name: "PBKDF2", hash: "SHA-256", salt: b64d(vaultSaltB64), iterations},
         pwKey,
         {name: "AES-GCM", length: 256},
-        false,  // NON-EXTRACTABLE
+        false,
         ["encrypt", "decrypt"]
     );
 
@@ -152,7 +150,7 @@ export async function openVaultFromModal(vaultId, inputId, vaultSaltB64, iterati
     const password = el.value ?? "";
     if (!password) return false;
 
-    // 1) vérif serveur (avec mot de passe clair, mais depuis le navigateur)
+    // 1) vérif serveur
     const check = await verifyVaultPasswordServer(vaultId, password, apiBase);
     if (!check.ok) {
         el.value = "";
@@ -185,7 +183,7 @@ export async function createVaultVerifierFromInput(inputId, iterations = 600000)
 }
 
 /**
- * Crée un nouveau vault depuis une modale (approche zéro-knowledge)
+ * Crée un nouveau vault depuis une modale
  * Le mot de passe est envoyé au serveur pour génération du hash
  * @param {number} iterations - Nombre d'itérations PBKDF2
  * @param {string} apiBase - URL de base de l'API
