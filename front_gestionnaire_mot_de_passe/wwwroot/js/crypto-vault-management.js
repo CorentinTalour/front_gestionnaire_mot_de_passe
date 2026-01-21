@@ -24,6 +24,7 @@ export async function openVault(vaultId, password, autoLockMs = 300000) {
     if (!check.ok) return {ok: false, error: "Mot de passe maître invalide."};
 
     const pwKey = await crypto.subtle.importKey("raw", enc.encode(password), {name: "PBKDF2"}, false, ["deriveKey"]);
+    // SÉCURITÉ: extractable=false pour empêcher l'extraction de la clé via DevTools
     const aesKey = await crypto.subtle.deriveKey(
         {name: "PBKDF2", hash: "SHA-256", salt: b64d(p.vaultSaltB64), iterations: p.iterations},
         pwKey,
@@ -101,11 +102,12 @@ export async function armVaultSession(vaultId, password, vaultSaltB64, iteration
     }
 
     const pwKey = await crypto.subtle.importKey("raw", enc.encode(password), {name: "PBKDF2"}, false, ["deriveKey"]);
+    // SÉCURITÉ: extractable=false pour empêcher l'extraction de la clé via DevTools
     const aesKey = await crypto.subtle.deriveKey(
         {name: "PBKDF2", hash: "SHA-256", salt: b64d(vaultSaltB64), iterations},
         pwKey,
         {name: "AES-GCM", length: 256},
-        false,
+        false,  // NON-EXTRACTABLE
         ["encrypt", "decrypt"]
     );
 
